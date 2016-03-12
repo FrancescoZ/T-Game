@@ -251,8 +251,9 @@
 			            			cnvElement[i].minX,cnvElement[i].minY,
 			            			cnvElement[i].maxX-cnvElement[i].minX, cnvElement[i].maxY-cnvElement[i].minY,
 			            			7,true,true);
+		                	var row=cnvElement[i].row,col=cnvElement[i].col,type=cnvElement[i].type;
 		                	cnvElement.splice(i,1);
-		                	checkSquare(cnvElement[i].row,cnvElement[i].col,cnvElement[i].type);
+		                	checkSquare(row,col,type);
 		                	for (var k = 0; k <this.ROWS ; k++) 
 						        for (var j= 0; j <this.COLS ; j++) 
 						        	if (gameSquare[k][j]>=4){
@@ -274,7 +275,7 @@
 		   		//right square
 		   		switch(type){
 		   			case 'r':
-		   				if (row<5 && row>0 && col>0 && col<5)	
+		   				if (row<5 && row>=0 && col>=0 && col<5)	
 		   					gameSquare[row][col]++;
 		   				if (row-1>=0)
 		   					gameSquare[row-1][col]++;
