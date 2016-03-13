@@ -1,3 +1,5 @@
+
+
 // This file is executed in the browser, when people visit /chat/<random id>
 
 $(function(){

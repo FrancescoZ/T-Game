@@ -2,9 +2,11 @@
 // for the two main URL endpoints of the application - /create and /chat/:id
 // and listens for socket.io messages.
 
-// Use the gravatar module, to turn email addresses into avatar images:
+// Use the gravatar module, to turn email addresses into color images:
 
 var gravatar = require('gravatar');
+
+var colors=['','','','',''];
 
 // Export a function, so that we can pass 
 // the app and io instances from the app.js file:
@@ -24,10 +26,10 @@ module.exports = function(app,io){
 		res.render('/home/');
 	});
 
-	// Initialize a new socket.io application, named 'chat'
+	// Initialize a new socket.io application, named 'game'
 	var game = io.on('connection', function (socket) {
 		// When the client emits the 'load' event, reply with the 
-		// number of people in this chat room
+		// number of people in this gamge room
 
 		socket.on('load',function(data){
 			var room = findClientsSocket(io,data);
@@ -37,27 +39,27 @@ module.exports = function(app,io){
 			}
 			else if(room.length >= 1) {
 				usrs=[];
-				avtrs=[];
+				clrs=[];
 				for (r in room){
 					usrs.push(r.username);
-					avtrs.push(r.avatar);
+					clrs.push(r.color);
 				}
 
 				socket.emit('peopleingame', {
 					number: 1,
 					user: usrs,
-					avatar: avtrs,
+					color: clrs,
 					id: data
 				});
 			}
 		});
 
-		// When the client emits 'login', save his name and avatar,
+		// When the client emits 'login', save his name and color,
 		// and add them to the room
 		socket.on('login', function(data) {
 
 			var room = findClientsSocket(io, data.id);
-			// Only two people per room are allowed
+			// Only five people per room are allowed
 			if (room.length < 5) {
 
 				// Use the socket object to store data. Each client gets
@@ -65,27 +67,27 @@ module.exports = function(app,io){
 
 				socket.username = data.user;
 				socket.room = data.id;
-				socket.avatar = gravatar.url(data.avatar, {s: '140', r: 'x',d:'retro'});
+				socket.color = colors[id%5];
 
-				// Tell the person what he should use for an avatar
-				socket.emit('img', socket.avatar);
+				// Tell the person what he should use for an color
+				socket.emit('colorGamer', socket.color);
 
 
 				// Add the client to the room
 				socket.join(data.id);
 
-				if (room.length == 1) {
+				if (room.length >= 1) {
 
 					var usernames = [],
 						avatars = [];
 
 					for(r in room){
 						usernames.push(r.username);
-						avatars.push(r.avatar);
+						avatars.push(r.color);
 					}
 
 					usernames.push(socket.username);			
-					avatars.push(socket.avatar);
+					avatars.push(socket.color);
 
 					// Send the startChat event to all the people in the
 					// room, along with a list of people that are in it.
@@ -113,10 +115,17 @@ module.exports = function(app,io){
 				boolean: true,
 				room: this.room,
 				user: this.username,
-				avatar: this.avatar
+				color: this.color
 			});
+
+			//if (this.room.length<=1){
+			//}
+
 		});
 
+		socket.on('move', function(data){
+			socket.broadcast.to(socket.room).emit('otherMove', {idLine: data.moveId, user: data.user, color: data.color});
+		});
 
 		// Handle the sending of messages
 		socket.on('msg', function(data){
@@ -124,6 +133,7 @@ module.exports = function(app,io){
 			// When the server receives a message, it sends it to the other person in the room.
 			socket.broadcast.to(socket.room).emit('receive', {msg: data.msg, user: data.user, img: data.img});
 		});
+			
 	});
 };
 
