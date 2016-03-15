@@ -4,9 +4,9 @@
 
 // Use the gravatar module, to turn email addresses into color images:
 
-var gravatar = require('gravatar');
 
-var colors=['','','','',''];
+
+var colors=['#e60000','#009900','#3385ff','#ff9900','#c61aff'],conCol=0;
 
 // Export a function, so that we can pass 
 // the app and io instances from the app.js file:
@@ -15,12 +15,10 @@ module.exports = function(app,io){
 
 	app.get('/', function(req, res){
 		// Render views/home.html
-		console.log('An user asked for index');
-		res.render('home');
 		// Generate unique id for the room
 		var id = Math.round((Math.random() * 1000000));
-		// Redirect to the random room
-		res.redirect('/home/'+id);
+		// Redirect to the random room	
+	    res.redirect('/home/'+id);
 	});
 	app.get('/home/:id', function(req,res){
 		res.render('/home/');
@@ -30,8 +28,9 @@ module.exports = function(app,io){
 	var game = io.on('connection', function (socket) {
 		// When the client emits the 'load' event, reply with the 
 		// number of people in this gamge room
-
+		console.log("connection");
 		socket.on('load',function(data){
+			console.log("load");
 			var room = findClientsSocket(io,data);
 			if(room.length === 0 ) {
 
@@ -57,7 +56,7 @@ module.exports = function(app,io){
 		// When the client emits 'login', save his name and color,
 		// and add them to the room
 		socket.on('login', function(data) {
-
+			consolo.log("login");
 			var room = findClientsSocket(io, data.id);
 			// Only five people per room are allowed
 			if (room.length < 5) {
@@ -67,16 +66,16 @@ module.exports = function(app,io){
 
 				socket.username = data.user;
 				socket.room = data.id;
-				socket.color = colors[id%5];
+				socket.color = colors[conCol++];
 
 				// Tell the person what he should use for an color
-				socket.emit('colorGamer', socket.color);
+				socket.emit('color', socket.color);
 
 
 				// Add the client to the room
 				socket.join(data.id);
 
-				if (room.length >= 1) {
+				if (room.length >= 1 && room.length<=5) {
 
 					var usernames = [],
 						avatars = [];

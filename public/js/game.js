@@ -63,7 +63,7 @@
 		}
 
 		(function () {
-		    function Board(id, c, r) {
+		    function Board(id, c, r,clr) {
 		        if (this instanceof Board) {
 		            this.CANVAS = document.getElementById(id);
 		            this.CTX = this.CANVAS.getContext("2d");
@@ -71,7 +71,7 @@
 		            this.HEIGHT = this.CANVAS.height || 0;
 		            this.COLS = c || 5;
 		            this.ROWS = r || 5;
-		            this.ACTIVECOLOR="#6699ff";
+		            this.ACTIVECOLOR=clr || "#6699ff";
 		            this.COLOR="#e6e6e6";
 		            this.BORDERCOLOR="#FFFFFF";
 		            this.TILEMARGINTOP=12;
@@ -84,14 +84,17 @@
 		                e.preventDefault();
 		                return false;
 		            }, false);
-		            this.winner = [false, ""];
+		            this.isFinished = false;
+		            this.isStarted=false;
+		            this.winner=[];
 		            this.boardDisabled = false;
 		        } else {
-		            return new Board(id, c, r);
+		            return new Board(id, c, r,clr);
 		        }
 		    }
 		    Board.prototype.draw = function () {
 
+		    	this.isStarted=true;
 		    	//Init
 		        var ctx = this.CTX;
 		        
@@ -186,15 +189,17 @@
 		            this.updateScoreBoard();
 		        }
 		    };
-		    Board.prototype.move = function (coor) {
+		    Board.prototype.move = function (coor,color) {
 		        var width = this.TILEWIDTH,
 		            ctx = this.CTX;
-		            
+		         if (!color)
+		         	color=this.ACTIVECOLOR;
+		         var squareActived=0;
 		        //Loop through and find tile that click was detected on
-		        for (var i = 0; i < cnvElement.length; i++) {
+		        for (var i = 0; i < cnvElement.length; i++)
 		            if (coor.x > cnvElement[i].minX && coor.y > cnvElement[i].minY && coor.x < cnvElement[i].maxX && coor.y < cnvElement[i].maxY) {
-		            		ctx.strokeStyle = this.ACTIVECOLOR;
-					        ctx.fillStyle=this.ACTIVECOLOR;
+		            		ctx.strokeStyle = color;
+					        ctx.fillStyle=color;
 		                	roundRect(ctx,cnvElement[i].row,cnvElement[i].col,cnvElement[i].type,
 			            			cnvElement[i].minX,cnvElement[i].minY,
 			            			cnvElement[i].maxX-cnvElement[i].minX, cnvElement[i].maxY-cnvElement[i].minY,
@@ -204,20 +209,40 @@
 		                	checkSquare(row,col,type);
 		                	for (var k = 0; k <this.ROWS ; k++) 
 						        for (var j= 0; j <this.COLS ; j++) 
-						        	if (gameSquare[k][j]>=4){
-						        		ctx.strokeStyle = this.ACTIVECOLOR;
-					        			ctx.fillStyle=this.ACTIVECOLOR;
+						        	if (gameSquare[k][j]>=4 && !(typeof gameSquare[i][j] === 'string' || gameSquare[i][j] instanceof String)){
+						        		squareActived++;
+						        		ctx.strokeStyle = color;
+					        			ctx.fillStyle=color;
 						        		roundRect(ctx,k,j,'s',
 				            				this.TILEWIDTH * j+this.TILEMARGINSIDE+19,this.TILEHEIGHT*k+19,
 				            				this.TILEWIDTH-25,this.TILEWIDTH-25,7,true,true)  
-				            			gameSquare[k][j]=0;
+				            			gameSquare[k][j]=color;
 				            		}
 		                	break;
 		                }
-		                
-		               
-		        }
+		       	return squareActived;
 		    };
+		    Board.prototype.checkWinner=function(){
+	    		this.isFinished=checkFinish();
+	    		var gamers=new Map();
+	    		if (this.isFinished){
+	    			for (var k = 0; k <this.ROWS ; k++) 
+				        for (var j= 0; j <this.COLS ; j++) 
+				        	if (typeof gameSquare[i][j] === 'string' || gameSquare[i][j] instanceof String)
+				        		if (gamers.keys().indexOf(gameSquare[i][j])!=-1)
+				        			gamers[gameSquare[i][j]]++;
+				        		else
+				        			gamers.set(gameSquare[i][j],1);
+				        	else
+				        		return undefined;
+				    var max={name:'',value:0};
+				    for (var [key, value] of gamers) 
+						if (max.value<value)
+							max={name:key,value:value};
+					return max.name;
+	    		}
+	    		return undefined;
+		    }
 		   
 		   	function checkSquare(row,col,type){
 		   		//right square
@@ -238,76 +263,16 @@
 		   			break;
 		   		}
 		   	}
-
-		    function checkWinner(mArr) {
-		        var winner = [false, ""];
-		        for (var i = 0; i < mArr.length; i++) {
-		            var hor = [],
-		                ver = [],
-		                diag = [];
-		            if (mArr[i][3] !== "") {
-		                //horizontal
-		                if (i % 3 === 0) {
-		                    for (var j = 0; j < 3; j++) {
-		                        hor.push([mArr[i + j][3], i + j]);
-		                    }
-		                    if (hor.length === 3) {
-		                        winner = isWinner(hor);
-		                        if (winner[0]) {
-		                            return winner;
-		                        }
-		                    }
-		                }
-		                //vertical && diag/anti diag
-		                if (i < 3) {
-		                    for (var j = 0; j + i < mArr.length; j += 3) {
-		                        ver.push([mArr[i + j][3], i + j]);
-		                    }
-		                    if (ver.length === 3) {
-		                        winner = isWinner(ver);
-		                        if (winner[0]) {
-		                            return winner;
-		                        }
-		                    }
-		                    if (i !== 1) {
-		                        for (var z = 0; z + i < mArr.length - i; z += (4 - i)) {
-		                            diag.push([mArr[i + z][3], i + z]);
-		                        }
-		                        if (diag.length === 3) {
-		                            winner = isWinner(diag);
-		                            if (winner[0]) {
-		                                return winner;
-		                            }
-		                        }
-		                    }
-		                }
-		            }
-		        }
-		        return winner;
+		    function initScore(){
 		    }
-
-		    function isWinner(arr) {
-		        arr.sort();
-		        var w = arr[0][0] && arr[0][0] === arr[arr.length - 1][0] ? [true].concat(arr) : [false, ""];
-		        return w;
+		    function checkFinish(){
+    			for (var k = 0; k <this.ROWS ; k++) 
+			        for (var j= 0; j <this.COLS ; j++) 
+			        	if (!(typeof gameSquare[i][j] === 'string' || gameSquare[i][j] instanceof String))
+			        		return false;
+			    return true;
 		    }
-
-		    function clickTouch(e) {
-		        var coor = b.CANVAS.relMouseCoords(e);
-		        if (!b.winner[0]) {
-		            b.move(coor);
-		        }
-		    }
-
-		    function initScore(){}
-	        // Initialize Game
-		    var b = new Board("game", 5, 5),
-		        resetcon = document.getElementById("reset");
-		    b.draw();
-		    b.updateScoreBoard();
-		    //Add event listeners for click or touch
-		    window.addEventListener("click", clickTouch, false);
-		    window.addEventListener("touchstart", clickTouch, false);
+	        
 		})();
 
 		//Get Mouse click coordinates within canvas modified to include touch events
