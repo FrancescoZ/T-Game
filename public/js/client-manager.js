@@ -19,8 +19,18 @@ $(function(){
 	var yourName = $("#userName"),
 		yourEmail = $("#userEmail"),
 		loginForm = $(".loginForm"),
+		logSec=$("#logSec"),
+		secWait=$("#secWait"),
+		secGame=$("#logSec"),
+		numberPlayer=$('#secGame'),
 		selectType=$("#matchType");
 
+	startWaiting=function(){
+		logSec.hide();
+		secWait.show('slow');
+	}
+	showMessage=function(message,section){
+	}
 	clickTouch=function(e) {
 		        var coor = board.CANVAS.relMouseCoords(e);
 		        if (!board.isFinished && myTurn) {
@@ -30,17 +40,63 @@ $(function(){
 		            if (board.checkWinner())
 		            	theWinnerIs();
 		        }
-		    }
+	}
+	newGame=function(nUser,typeGame){
+		if (nUser){
+			numberPlayer.attr('disabled', 'disabled');
+			numberPlayer.val(nUser);
+		}
+		if (typeGame){
+			selectType.attr('disabled', 'disabled');
+			selectType.val(typeGame);
+		}
+		logSec.show( "slow");
+	}
+	login=function(username,userEmail,id,type,socket,maxGmr){
+		if(username.length < 1){
+			showMessage("error","Please enter a nick name longer than 1 character!",logSec);
+			return;
+		}
+		if(!isValid(userEmail)) {
+			showMessage("error","Please enter a valid email!",logSec);
+			return
+		}
+		else {
+			// call the server-side function 'login' and send user's parameters
+			socket.emit('login', {user: username, email: userEmail,matchType:type,maxGamer:maxGmr, id: id});
+			startWaiting();
+		}
+	}
 
 	// on connection to server get the id of person's room
 	socket.on('connect', function(){
 		socket.emit('load', id);
+		$('.sec').hide();
 	});
+	//get information about the room, if it's already open or not
+	socket.on('roomDetail',function(data){
+		console.log('roomDetail received');
+		console.log(data);
+		if (data.number===0)
+			newGame();
+		else
+			newGame(data.nusers,data.type);
+		loginForm.on('submit', function(e){
+				e.preventDefault();
+				e.preventDefault();
+				name = $.trim(yourName.val());
+				email = yourEmail.val();
+				gameType=selectType.val();
+				maxGamer=numberPlayer.val();
+				login(name,email,id,gameType,socket,maxGamer);
+			});
+	});
+
 	socket.on('color', function(data){
 		color = data;
 	});
 	socket.on('peopleingame', function(data){
-		console.log("Received signal peopleingame");
+		/*console.log("Received signal peopleingame");
 		console.log(data);
 		if(data.number > 0 && data.number<maxGamer){
 			showMessage("login");
@@ -66,16 +122,16 @@ $(function(){
 		}
 		else {
 			showMessage("tooManyPeople");
-		}
+		}*/
 	});
 	socket.on('peopleloggedin',function(data){
 		gamers.push({name:data.username,color:data.color});
 		if (gamers.length<=maxGamer){
 			$(".bokeh ul").append('<li></li>');
-			$("#numPlayerInfo").val(gamers.length);
+			$("#numPlayerInfo").text(gamers.length);
 		}
 		if (waitingGame && gamers.length==maxGamer)
-			showMessage("StartingGame");
+			showMessage("StartingGame",secWait);
 	});
 	socket.on('startGame', function(data){
 		console.log(data);
@@ -113,21 +169,7 @@ function isValid(thatemail) {
 	var re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 	return re.test(thatemail);
 }
-function login(username,userEmail,id,type,socket){
-	if(username.length < 1){
-		showMessage("error","Please enter a nick name longer than 1 character!");
-		return;
-	}
-	if(!isValid(userEmail)) {
-		showMessage("error","Please enter a valid email!");
-		return
-	}
-	else {
-		// call the server-side function 'login' and send user's parameters
-		socket.emit('login', {user: username, email: userEmail,matchType:type, id: id});
-		showMessage('WaitingForAnswer');
-	}
-}
+
 function showMessage(status,data){
 
 	return ;

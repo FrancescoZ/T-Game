@@ -32,25 +32,15 @@ module.exports = function(app,io){
 		socket.on('load',function(data){
 			console.log("load");
 			var room = findClientsSocket(io,data);
-			console.log(room);
-			if(room.length === 0 ) {
-
-				socket.emit('peopleingame', {number: 0});
-			}
-			else if(room.length >= 1) {
-				usrs=[];
-				clrs=[];
-				for (r in room){
-					usrs.push(r.username);
-					clrs.push(r.color);
-				}
-				console.log("Signal peopleingameingame emit");
-				socket.emit('peopleingame', {
-					number: usrs.length,
-					user: usrs,
-					color: clrs
+			if(room.length === 0 ) 
+				socket.emit('roomDetail', {number: 0});
+			else if(room.length >= 1) 
+				socket.emit('roomDetail', {
+					number: room.length,
+					nusers: room.maxGamer,
+					type: room.type
 				});
-			}
+			console.log('roomDetail sent');
 		});
 
 		// When the client emits 'login', save his name and color,
