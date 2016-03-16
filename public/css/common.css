@@ -34,6 +34,10 @@ body {
 .main h2 {
 	overflow: hidden;
 }
+.center .col{
+  margin:0em 0em 0em 30%;
+}
+
 .col{
 	margin: 3em 0em 0em 15%;
 }
@@ -53,6 +57,23 @@ input[type="text"]{
     min-width: 20em;
     min-height: 2.4em;
 
+}
+ input[type="number"]{
+  float: left;
+    padding-left: 1em;
+    background-color: #f0f1f3;
+    border: 0.1em solid #d1d1d1;
+    border-radius: 0.3em;
+    box-shadow: 0em 0.2em 0.2em #e3e4e6;
+    margin: 1em 1em 1em 1em;
+    min-width: 11em;
+    min-height: 2.4em;
+
+}
+
+.infoNum{
+  float:left;
+  margin:1em 0em 0em 3em;
 }
 
 input[type="submit"]{

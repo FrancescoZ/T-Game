@@ -21,7 +21,7 @@ module.exports = function(app,io){
 	    res.redirect('/home/'+id);
 	});
 	app.get('/home/:id', function(req,res){
-		res.render('/home/');
+		res.render('home');
 	});
 
 	// Initialize a new socket.io application, named 'game'
@@ -32,6 +32,7 @@ module.exports = function(app,io){
 		socket.on('load',function(data){
 			console.log("load");
 			var room = findClientsSocket(io,data);
+			console.log(room);
 			if(room.length === 0 ) {
 
 				socket.emit('peopleingame', {number: 0});
@@ -43,12 +44,11 @@ module.exports = function(app,io){
 					usrs.push(r.username);
 					clrs.push(r.color);
 				}
-
+				console.log("Signal peopleingameingame emit");
 				socket.emit('peopleingame', {
-					number: 1,
+					number: usrs.length,
 					user: usrs,
-					color: clrs,
-					id: data
+					color: clrs
 				});
 			}
 		});
@@ -56,8 +56,10 @@ module.exports = function(app,io){
 		// When the client emits 'login', save his name and color,
 		// and add them to the room
 		socket.on('login', function(data) {
-			consolo.log("login");
+			console.log("login");
+			console.log(data);
 			var room = findClientsSocket(io, data.id);
+			console.log(room);
 			// Only five people per room are allowed
 			if (room.length < 5) {
 
