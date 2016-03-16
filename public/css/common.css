@@ -34,12 +34,13 @@ body {
 .main h2 {
 	overflow: hidden;
 }
-.center .col{
-  margin:0em 0em 0em 30%;
-}
+
 
 .col{
 	margin: 3em 0em 0em 15%;
+}
+.center{
+  margin:2em 0em 2em 33%;
 }
 .profileImg {
 	float: left;

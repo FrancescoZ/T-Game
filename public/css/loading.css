@@ -3,7 +3,7 @@
     width: 1em;
     height: 1em;
     position: relative;
-    margin: 100px auto;
+    margin: 0em auto 0em auto;
     border-radius: 50%;
     border: .01em solid rgba(150,150,150,0.1);
     list-style: none;
