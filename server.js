@@ -1,17 +1,14 @@
 // This file is required by app.js. It sets up event listeners
-// for the two main URL endpoints of the application - /create and /chat/:id
-// and listens for socket.io messages.
-
-// Use the gravatar module, to turn email addresses into color images:
 
 
 
-var colors=['#e60000','#009900','#3385ff','#ff9900','#c61aff'],conCol=0;
 
 // Export a function, so that we can pass 
 // the app and io instances from the app.js file:
 
 module.exports = function(app,io){
+
+	var game_server=require("./game_server.js");
 
 	app.get('/', function(req, res){
 		// Render views/home.html
@@ -28,71 +25,50 @@ module.exports = function(app,io){
 	var game = io.on('connection', function (socket) {
 		// When the client emits the 'load' event, reply with the 
 		// number of people in this gamge room
-		console.log("connection");
 		socket.on('load',function(data){
-			console.log("load");
-			var room = findClientsSocket(io,data);
-			if(room.length === 0 ) 
+			var gameSearched = game_server.isGame(data);
+			if(!gameSearched) 
 				socket.emit('roomDetail', {number: 0});
-			else if(room.length >= 1) 
+			else if(gameSearched.players.length>0) 
 				socket.emit('roomDetail', {
-					number: room.length,
-					nusers: room.maxGamer,
-					type: room.type
+					number: gameSearched.players.length,
+					nusers: gameSearched.maxGamer,
+					type: gameSearched.type
 				});
-			console.log('roomDetail sent');
 		});
 
 		// When the client emits 'login', save his name and color,
 		// and add them to the room
 		socket.on('login', function(data) {
-			console.log("login");
-			console.log(data);
-			var room = findClientsSocket(io, data.id);
-			console.log(room);
+			var gameSearched = game_server.findGame(data.id,data.maxGamer,data.matchType);
 			// Only five people per room are allowed
-			if (room.length < 5) {
-
+			if (gameSearched.players.length<data.maxGamer) {
 				// Use the socket object to store data. Each client gets
 				// their own unique socket object
-
-				socket.username = data.user;
-				socket.room = data.id;
-				socket.color = colors[conCol++];
-
-				// Tell the person what he should use for an color
-				socket.emit('color', socket.color);
-
-
+				
+				var player=game_server.addPlayer(data.user,gameSearched.id);
 				// Add the client to the room
 				socket.join(data.id);
-
-				if (room.length >= 1 && room.length<=5) {
-
-					var usernames = [],
-						avatars = [];
-
-					for(r in room){
-						usernames.push(r.username);
-						avatars.push(r.color);
-					}
-
-					usernames.push(socket.username);			
-					avatars.push(socket.color);
-
-					// Send the startChat event to all the people in the
+				socket.emit('loggedin',player.color);
+				game.in(data.id).emit('peopleloggedin', {
+						username:player.username,
+						color:player.color,
+						id:gameSearched.id
+					});
+				console.log(gameSearched.players.length+' '+data.maxGamer);
+				if (gameSearched.players.length ==data.maxGamer) {
+					console.log('dentro');
+					// Send the startGame event to all the people in the
 					// room, along with a list of people that are in it.
-
 					game.in(data.id).emit('startGame', {
 						boolean: true,
 						id: data.id,
-						users: usernames,
-						avatars: avatars
+						users:gameSearched.players
 					});
 				}
 			}
 			else {
-				socket.emit('tooMany', {boolean: true});
+				socket.emit('wait', {boolean: true});
 			}
 		});
 
@@ -115,37 +91,16 @@ module.exports = function(app,io){
 		});
 
 		socket.on('move', function(data){
-			socket.broadcast.to(socket.room).emit('otherMove', {idLine: data.moveId, user: data.user, color: data.color});
+			
 		});
 
 		// Handle the sending of messages
 		socket.on('msg', function(data){
 
-			// When the server receives a message, it sends it to the other person in the room.
-			socket.broadcast.to(socket.room).emit('receive', {msg: data.msg, user: data.user, img: data.img});
 		});
 			
 	});
 };
 
-function findClientsSocket(io,roomId, namespace) {
-	var res = [],
-		ns = io.of(namespace ||"/");    // the default namespace is "/"
-
-	if (ns) {
-		for (var id in ns.connected) {
-			if(roomId) {
-				var index = ns.connected[id].rooms.indexOf(roomId) ;
-				if(index !== -1) {
-					res.push(ns.connected[id]);
-				}
-			}
-			else {
-				res.push(ns.connected[id]);
-			}
-		}
-	}
-	return res;
-}
 
 

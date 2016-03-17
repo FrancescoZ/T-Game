@@ -140,8 +140,7 @@
 					gameSquare[i] = new Array(this.COLS);
 				for (var i = 0; i <this.ROWS ; i++) 
 			        for (var j= 0; j <this.COLS ; j++) 
-			        	gameSquare[i][j]=0;
-				
+			        	gameSquare[i][j]=0;	
 		    };
 		    Board.prototype.gameBoard = function (t, c, r) {
 		        var b = [],

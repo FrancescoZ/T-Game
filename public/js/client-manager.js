@@ -21,8 +21,8 @@ $(function(){
 		loginForm = $(".loginForm"),
 		logSec=$("#logSec"),
 		secWait=$("#secWait"),
-		secGame=$("#logSec"),
-		numberPlayer=$('#secGame'),
+		secGame=$("#secGame"),
+		numberPlayer=$('#playernum'),
 		selectType=$("#matchType");
 
 	startWaiting=function(){
@@ -64,23 +64,30 @@ $(function(){
 		else {
 			// call the server-side function 'login' and send user's parameters
 			socket.emit('login', {user: username, email: userEmail,matchType:type,maxGamer:maxGmr, id: id});
-			startWaiting();
 		}
 	}
 
 	// on connection to server get the id of person's room
 	socket.on('connect', function(){
+		if (waitingGame)
+			return;
 		socket.emit('load', id);
 		$('.sec').hide();
 	});
 	//get information about the room, if it's already open or not
 	socket.on('roomDetail',function(data){
+		if (waitingGame)
+			return;
 		console.log('roomDetail received');
 		console.log(data);
 		if (data.number===0)
 			newGame();
-		else
+		else{
 			newGame(data.nusers,data.type);
+			for (var i=0;i<data.number;i++)
+				$(".bokeh").append('<li></li>');
+			$("#numPlayerInfo").text(data.number);
+		}
 		loginForm.on('submit', function(e){
 				e.preventDefault();
 				e.preventDefault();
@@ -89,11 +96,16 @@ $(function(){
 				gameType=selectType.val();
 				maxGamer=numberPlayer.val();
 				login(name,email,id,gameType,socket,maxGamer);
+				return false;
 			});
 	});
-
-	socket.on('color', function(data){
+	socket.on('watchDog',function(){
+		socket.emit('answers',{status:'connected'});
+	})
+	socket.on('loggedin', function(data){
 		color = data;
+		waitingGame=true;
+		startWaiting();
 	});
 	socket.on('peopleingame', function(data){
 		/*console.log("Received signal peopleingame");
@@ -127,7 +139,7 @@ $(function(){
 	socket.on('peopleloggedin',function(data){
 		gamers.push({name:data.username,color:data.color});
 		if (gamers.length<=maxGamer){
-			$(".bokeh ul").append('<li></li>');
+			$(".bokeh").append('<li></li>');
 			$("#numPlayerInfo").text(gamers.length);
 		}
 		if (waitingGame && gamers.length==maxGamer)
@@ -137,7 +149,7 @@ $(function(){
 		console.log(data);
 		if(data.boolean && data.id == id) {
 			// Initialize Game
-		    board = new Board("game", data.row, data.col,color),
+		    board = new Board("game", data.type, data.type,color);
 		    board.draw();
 		    board.updateScoreBoard();
 		    //Add event listeners for click or touch
@@ -145,6 +157,9 @@ $(function(){
 		    window.addEventListener("touchstart", clickTouch, false);
 		}
 	});
+	socket.on('move',function(data){
+		board.move(data.coor,data.color);
+	})
 	socket.on('yourTurn',function(data){
 		console.log(data);
 		if(data.boolean && data.id == id) 
