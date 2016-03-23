@@ -9,9 +9,10 @@ var game_server = module.exports = {
 	findGame:function(id,maxGamer,type){
 		if (this.isGame(id))
 			return this.isGame(id);
-		for (var game in this.games)
-			if (game.maxGamer===maxGamer && game.type===type && games.players.length<maxGamer)
+		for (var game in this.games){
+			if (game.maxGamer===maxGamer && game.type===type && game.players.length<maxGamer)
 				return game;
+		}
 		this.games[id]=this.createGame(id,maxGamer,type);
 		
 		return this.games[id];
@@ -23,7 +24,8 @@ var game_server = module.exports = {
 			type:type,
 			players:[],
 			clickedObject:[],
-			activePlayer:0
+			activePlayer:0,
+			timer:0
 		}
 		return game;
 	},
@@ -42,12 +44,13 @@ var game_server = module.exports = {
 	removePlayer:function(id,color){
 		if (!this.isGame(id))
 			return;
-		array.splice(this.games[id].players[color].indexOf(this.games[id].players[color]),1);
-	}
+		this.games[id].players.splice(this.games[id].players.indexOf(this.games[id].players[color]),1);
+	},
 	playerMoved:function(id){
 		if (!this.isGame(id))
 			return;
 		if (++this.games[id].activePlayer>=this.games[id].players.length)
 			this.games[id].activePlayer=0;
+		this.games[id].timer=0;
 	}
 }

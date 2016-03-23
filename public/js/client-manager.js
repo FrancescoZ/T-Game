@@ -23,7 +23,9 @@ $(function(){
 		secWait=$("#secWait"),
 		secGame=$("#secGame"),
 		numberPlayer=$('#playernum'),
-		selectType=$("#matchType");
+		selectType=$("#matchType"),
+		secTimer=$('#timerDiv');
+		timer=$('#timeTxt');
 
 	startWaiting=function(){
 		logSec.hide();
@@ -33,21 +35,27 @@ $(function(){
 		secWait.hide();
 		secGame.show('slow');
 	}
-	showMessage=function(message,section){
+	showTimer=function(count){
+		secTimer.show("fade");
+		timer.text(count);
+	}
+	stopTimer=function(){
+		secTimer.hide();
 	}
 	clickTouch=function(e) {
-		        var coor = board.CANVAS.relMouseCoords(e);
-		        if (!board.isFinished && myTurn) {
-		            var idClicked=board.move(coor);
-		            socket.emit('played', {
-		            	coor:coor,
-		            	color:color,
-		            	id:id
-		            });
-		            myTurn=false;
-		            if (board.checkWinner())
-		            	theWinnerIs();
-		        }
+        var coor = board.CANVAS.relMouseCoords(e);
+        if (!board.isFinished && myTurn) {
+            var squareN=board.move(coor);
+            socket.emit('played', {
+            	coor:coor,
+            	color:color,
+            	id:id,
+            	squareClicked:squareN
+            });
+            myTurn=false;
+            if (board.checkWinner())
+            	theWinnerIs();
+        }
 	}
 	newGame=function(nUser,typeGame){
 		if (nUser){
@@ -108,8 +116,9 @@ $(function(){
 				return false;
 			});
 	});
-	socket.on('watchDog',function(){
-		socket.emit('answers',{status:'connected'});
+	socket.on('timer',function(data){
+		if (!myTurn && data.id==id)
+			showTimer(data.second);
 	})
 	socket.on('loggedin', function(data){
 		color = data;
@@ -174,8 +183,12 @@ $(function(){
 	})
 	socket.on('turn',function(data){
 		console.log(data);
-		if(data.boolean && data.id == id && data.color==color) 
+		if(data.boolean && data.id == id && data.color==color) {
 			myTurn=true;
+			stopTimer();
+		}
+		else
+			showTimer();
 	});
 });
 

@@ -69,6 +69,24 @@ module.exports = function(app,io){
 						boolean: true,
 						id: data.id
 					});
+					var interval=function(){
+						var timer = game_server.findGame(data.id,data.maxGamer,data.matchType).timer++;
+						game.in(data.id).emit("timer",{
+							id:data.id,
+							second:timer});
+						if (timer>40){
+							game_server.playerMoved(data.id);
+							game.in(data.id).emit('turn',{
+								color:gameSearched.players[gameSearched.activePlayer].color,
+								boolean: true,
+								id: data.id
+							});
+							clearInterval(interval);
+							setInterval(interval,1000);
+						}
+					};
+					setInterval(interval,1000);
+
 
 				}
 			}
@@ -79,17 +97,20 @@ module.exports = function(app,io){
 
 		socket.on('played',function(data){
 			var gameSearched = game_server.findGame(data.id);
-			game_server.playerMoved(data.id);
 			game.in(data.id).emit('moved',data);
+			if (data.squareClicked==0)
+				game_server.playerMoved(data.id);
 			game.in(data.id).emit('turn',{
-						color:gameSearched.players[gameSearched.activePlayer].color,
-						boolean: true,
-						id: data.id
-					});
+				color:gameSearched.players[gameSearched.activePlayer].color,
+				boolean: true,
+				id: data.id
+			});
 		});
 
 		// Somebody left the chat
 		socket.on('disconnect', function(data) {
+			if (!game_server.isGame(data.id))
+				return;
 			var gameSearched = game_server.findGame(data.id);
 			game_server.removePlayer(data.id,data.color);
 			game.in(data.id).emit('leave',data);
