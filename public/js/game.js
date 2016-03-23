@@ -207,7 +207,7 @@
 		                	checkSquare(row,col,type);
 		                	for (var k = 0; k <this.ROWS ; k++) 
 						        for (var j= 0; j <this.COLS ; j++) 
-						        	if (gameSquare[k][j]>=4 && !(typeof gameSquare[i][j] === 'string' || gameSquare[i][j] instanceof String)){
+						        	if (gameSquare[k][j]>=4 && !(typeof gameSquare[k][j] === 'string' || gameSquare[k][j] instanceof String)){
 						        		squareActived++;
 						        		ctx.strokeStyle = color;
 					        			ctx.fillStyle=color;
@@ -221,16 +221,16 @@
 		       	return squareActived;
 		    };
 		    Board.prototype.checkWinner=function(){
-	    		this.isFinished=checkFinish();
+	    		this.isFinished=this.checkFinish();
 	    		var gamers=new Map();
 	    		if (this.isFinished){
 	    			for (var k = 0; k <this.ROWS ; k++) 
 				        for (var j= 0; j <this.COLS ; j++) 
-				        	if (typeof gameSquare[i][j] === 'string' || gameSquare[i][j] instanceof String)
-				        		if (gamers.keys().indexOf(gameSquare[i][j])!=-1)
-				        			gamers[gameSquare[i][j]]++;
+				        	if (typeof gameSquare[k][j] === 'string' || gameSquare[k][j] instanceof String)
+				        		if (gamers.keys().indexOf(gameSquare[k][j])!=-1)
+				        			gamers[gameSquare[k][j]]++;
 				        		else
-				        			gamers.set(gameSquare[i][j],1);
+				        			gamers.set(gameSquare[k][j],1);
 				        	else
 				        		return undefined;
 				    var max={name:'',value:0};
@@ -240,6 +240,13 @@
 					return max.name;
 	    		}
 	    		return undefined;
+		    }
+		    Board.prototype.checkFinish=function(){
+    			for (var k = 0; k <this.ROWS ; k++) 
+			        for (var j= 0; j <this.COLS ; j++) 
+			        	if (!(typeof gameSquare[k][j] === 'string' || gameSquare[k][j] instanceof String))
+			        		return false;
+			    return true;
 		    }
 		   
 		   	function checkSquare(row,col,type){
@@ -263,13 +270,7 @@
 		   	}
 		    function initScore(){
 		    }
-		    function checkFinish(){
-    			for (var k = 0; k <this.ROWS ; k++) 
-			        for (var j= 0; j <this.COLS ; j++) 
-			        	if (!(typeof gameSquare[i][j] === 'string' || gameSquare[i][j] instanceof String))
-			        		return false;
-			    return true;
-		    }
+		    
 	        
 		
 

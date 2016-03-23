@@ -39,7 +39,11 @@ $(function(){
 		        var coor = board.CANVAS.relMouseCoords(e);
 		        if (!board.isFinished && myTurn) {
 		            var idClicked=board.move(coor);
-		            socket.emit('move', idClicked);
+		            socket.emit('played', {
+		            	coor:coor,
+		            	color:color,
+		            	id:id
+		            });
 		            myTurn=false;
 		            if (board.checkWinner())
 		            	theWinnerIs();
@@ -91,7 +95,7 @@ $(function(){
 			for (var i=0;i<data.number;i++)
 				$(".bokeh").append('<li></li>');
 			$("#numPlayerInfo").text(i);
-			$("#linkGame").text("http://localhost:8080/home/"+id);
+			$("#linkGame").attr("http://localhost:8080/home/"+id);
 		}
 		loginForm.on('submit', function(e){
 				e.preventDefault();
@@ -146,7 +150,7 @@ $(function(){
 		if (gamers.length<=maxGamer){
 			$(".bokeh").append('<li></li>');
 			$("#numPlayerInfo").text(gamers.length);
-			$("#linkGame").text("http://localhost:8080/home/"+id);
+			$("#linkGame").attr("http://localhost:8080/home/"+id);
 		}
 		if (waitingGame && gamers.length==maxGamer)
 			showMessage("StartingGame",secWait);
@@ -164,20 +168,14 @@ $(function(){
 		    window.addEventListener("touchstart", clickTouch, false);
 		}
 	});
-	socket.on('move',function(data){
-		board.move(data.coor,data.color);
+	socket.on('moved',function(data){
+		if (data.color!=color)
+			board.move(data.coor,data.color);
 	})
-	socket.on('yourTurn',function(data){
+	socket.on('turn',function(data){
 		console.log(data);
-		if(data.boolean && data.id == id) 
+		if(data.boolean && data.id == id && data.color==color) 
 			myTurn=true;
-	});
-	socket.on('enemyTurn',function(data){
-		if(data.boolean && data.id == id){
-			board.move(data.coordinates,data.color);
-			if (board.checkWinner())
-				theWinnerIs();	
-		}
 	});
 });
 

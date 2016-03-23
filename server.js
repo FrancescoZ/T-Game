@@ -55,9 +55,7 @@ module.exports = function(app,io){
 						color:player.color,
 						id:gameSearched.id
 					});
-				console.log(gameSearched.players.length+' '+data.maxGamer);
 				if (gameSearched.players.length ==data.maxGamer) {
-					console.log('dentro');
 					// Send the startGame event to all the people in the
 					// room, along with a list of people that are in it.
 					game.in(data.id).emit('startGame', {
@@ -66,6 +64,12 @@ module.exports = function(app,io){
 						type:gameSearched.type,
 						users:gameSearched.players
 					});
+					game.in(data.id).emit('turn',{
+						color:gameSearched.players[gameSearched.activePlayer].color,
+						boolean: true,
+						id: data.id
+					});
+
 				}
 			}
 			else {
@@ -73,33 +77,23 @@ module.exports = function(app,io){
 			}
 		});
 
+		socket.on('played',function(data){
+			var gameSearched = game_server.findGame(data.id);
+			game_server.playerMoved(data.id);
+			game.in(data.id).emit('moved',data);
+			game.in(data.id).emit('turn',{
+						color:gameSearched.players[gameSearched.activePlayer].color,
+						boolean: true,
+						id: data.id
+					});
+		});
+
 		// Somebody left the chat
-		socket.on('disconnect', function() {
-
-			// Notify the other person in the chat room
-			// that his partner has left
-
-			socket.broadcast.to(this.room).emit('leave', {
-				boolean: true,
-				room: this.room,
-				user: this.username,
-				color: this.color
-			});
-
-			//if (this.room.length<=1){
-			//}
-
-		});
-
-		socket.on('move', function(data){
-			
-		});
-
-		// Handle the sending of messages
-		socket.on('msg', function(data){
-
-		});
-			
+		socket.on('disconnect', function(data) {
+			var gameSearched = game_server.findGame(data.id);
+			game_server.removePlayer(data.id,data.color);
+			game.in(data.id).emit('leave',data);
+		});			
 	});
 };
 
