@@ -198,3 +198,7 @@ input[type="submit"]{
 	background: #c61aff;
 	border-left-color: #c61aff;
 } 
+
+.gameBoard{
+  margin:3em 0em 0em 0em;
+}

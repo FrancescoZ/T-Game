@@ -63,6 +63,7 @@ module.exports = function(app,io){
 					game.in(data.id).emit('startGame', {
 						boolean: true,
 						id: data.id,
+						type:gameSearched.type,
 						users:gameSearched.players
 					});
 				}

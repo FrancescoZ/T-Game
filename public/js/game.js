@@ -62,7 +62,6 @@
 			  return new ClickableArea(type,row,col,x,x+width,y,y+height);   
 		}
 
-		(function () {
 		    function Board(id, c, r,clr) {
 		        if (this instanceof Board) {
 		            this.CANVAS = document.getElementById(id);
@@ -272,7 +271,7 @@
 			    return true;
 		    }
 	        
-		})();
+		
 
 		//Get Mouse click coordinates within canvas modified to include touch events
 		HTMLCanvasElement.prototype.relMouseCoords = function (event) {

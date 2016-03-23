@@ -29,6 +29,10 @@ $(function(){
 		logSec.hide();
 		secWait.show('slow');
 	}
+	stopWaiting=function(){
+		secWait.hide();
+		secGame.show('slow');
+	}
 	showMessage=function(message,section){
 	}
 	clickTouch=function(e) {
@@ -86,7 +90,8 @@ $(function(){
 			newGame(data.nusers,data.type);
 			for (var i=0;i<data.number;i++)
 				$(".bokeh").append('<li></li>');
-			$("#numPlayerInfo").text(data.number);
+			$("#numPlayerInfo").text(i);
+			$("#linkGame").text("http://localhost:8080/home/"+id);
 		}
 		loginForm.on('submit', function(e){
 				e.preventDefault();
@@ -141,6 +146,7 @@ $(function(){
 		if (gamers.length<=maxGamer){
 			$(".bokeh").append('<li></li>');
 			$("#numPlayerInfo").text(gamers.length);
+			$("#linkGame").text("http://localhost:8080/home/"+id);
 		}
 		if (waitingGame && gamers.length==maxGamer)
 			showMessage("StartingGame",secWait);
@@ -149,6 +155,7 @@ $(function(){
 		console.log(data);
 		if(data.boolean && data.id == id) {
 			// Initialize Game
+			stopWaiting();
 		    board = new Board("game", data.type, data.type,color);
 		    board.draw();
 		    board.updateScoreBoard();
