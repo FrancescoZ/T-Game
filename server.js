@@ -49,10 +49,14 @@ module.exports = function(app,io){
 				var player=game_server.addPlayer(data.user,gameSearched.id);
 				// Add the client to the room
 				socket.join(data.id);
-				socket.emit('loggedin',player.color);
+				socket.emit('loggedin',{
+					color:player.color,
+					index:player.index
+				});
 				game.in(data.id).emit('peopleloggedin', {
 						username:player.username,
 						color:player.color,
+						index:player.index,
 						id:gameSearched.id
 					});
 				if (gameSearched.players.length ==data.maxGamer) {
@@ -66,6 +70,7 @@ module.exports = function(app,io){
 					});
 					game.in(data.id).emit('turn',{
 						color:gameSearched.players[gameSearched.activePlayer].color,
+						index:gameSearched.players[gameSearched.activePlayer].index,
 						boolean: true,
 						id: data.id
 					});
@@ -78,6 +83,7 @@ module.exports = function(app,io){
 							game_server.playerMoved(data.id);
 							game.in(data.id).emit('turn',{
 								color:gameSearched.players[gameSearched.activePlayer].color,
+								index:gameSearched.players[gameSearched.activePlayer].index,
 								boolean: true,
 								id: data.id
 							});
@@ -103,6 +109,7 @@ module.exports = function(app,io){
 			game.in(data.id).emit('turn',{
 				color:gameSearched.players[gameSearched.activePlayer].color,
 				boolean: true,
+				index:gameSearched.players[gameSearched.activePlayer].index,
 				id: data.id
 			});
 		});

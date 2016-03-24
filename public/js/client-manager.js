@@ -10,6 +10,7 @@ $(function(){
 	var name = "",
 		email = "",
 		color = "",
+		index="",
 		board="",
 		waitingGame=false,
 		myTurn=false,
@@ -42,22 +43,33 @@ $(function(){
 	stopTimer=function(){
 		secTimer.hide();
 	}
-	clickTouch=function(e) {
+	endGame=function(winner){
+	}
+	clickTouch=function(e){ 
         var coor = board.CANVAS.relMouseCoords(e);
         if (!board.isFinished && myTurn) {
-            var squareN=board.move(coor);
+            var result=board.move(coor);
+            if (!result.moved)
+            	return;
+            updateScoreBoard(color,index);
             socket.emit('played', {
             	coor:coor,
             	color:color,
             	id:id,
-            	squareClicked:squareN
+            	index:index,
+            	squareClicked:result.squareN
             });
             myTurn=false;
-            if (board.checkWinner())
-            	theWinnerIs();
-        }
+            var winner=board.checkWinner();
+            if (winner){
+            	socket.emit('gameEnd',{
+            		id:id,
+            		winner:winner
+            	})
+        	}
+		}
 	}
-	newGame=function(nUser,typeGame){
+	setNewGame=function(nUser,typeGame){
 		if (nUser){
 			numberPlayer.attr('disabled', 'disabled');
 			numberPlayer.val(nUser);
@@ -82,6 +94,17 @@ $(function(){
 			socket.emit('login', {user: username, email: userEmail,matchType:type,maxGamer:maxGmr, id: id});
 		}
 	}
+	updateScoreBoard=function(color,i){
+		$('#badge'+i).attr('data-badge', board.getScore(color));
+	}
+	initScoreBoard=function(players){
+		for(var i=0;i<players.length;i++){
+			$('#badge'+(i+1)).show();
+			$('#badge'+(i+1)).attr('data-badge', 0);
+			$('#name'+(i+1)).text(players[i].username);
+		}
+
+	}
 
 	// on connection to server get the id of person's room
 	socket.on('connect', function(){
@@ -97,9 +120,9 @@ $(function(){
 		console.log('roomDetail received');
 		console.log(data);
 		if (data.number===0)
-			newGame();
+			setNewGame();
 		else{
-			newGame(data.nusers,data.type);
+			setNewGame(data.nusers,data.type);
 			for (var i=0;i<data.number;i++)
 				$(".bokeh").append('<li></li>');
 			$("#numPlayerInfo").text(i);
@@ -121,7 +144,8 @@ $(function(){
 			showTimer(data.second);
 	})
 	socket.on('loggedin', function(data){
-		color = data;
+		color = data.color;
+		index=data.index;
 		waitingGame=true;
 		startWaiting();
 	});
@@ -171,16 +195,18 @@ $(function(){
 			stopWaiting();
 		    board = new Board("game", data.type, data.type,color);
 		    board.draw();
-		    board.updateScoreBoard();
+		   	initScoreBoard(data.users);
 		    //Add event listeners for click or touch
 		    window.addEventListener("click", clickTouch, false);
 		    window.addEventListener("touchstart", clickTouch, false);
 		}
 	});
 	socket.on('moved',function(data){
-		if (data.color!=color)
+		if (data.color!=color){
 			board.move(data.coor,data.color);
-	})
+			updateScoreBoard(data.color,data.index);
+		}
+	});
 	socket.on('turn',function(data){
 		console.log(data);
 		if(data.boolean && data.id == id && data.color==color) {
@@ -190,9 +216,13 @@ $(function(){
 		else
 			showTimer();
 	});
+	socket.on('end',function(data){
+		if (data.id==id)
+			endGame(data.color==color);
+	});
+
 });
 
-function theWinnerIs(){}
 
 function scrollToBottom(){
 	$("html, body").animate({ scrollTop: $(document).height()-$(window).height() },1000);

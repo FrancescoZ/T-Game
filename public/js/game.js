@@ -153,41 +153,14 @@
 		        }
 		        return b;
 		    };
-		    Board.prototype.updateScore = function () {
-		        if (supports_html5_storage()) {
-		            var p = sessionStorage.score || initScore(),
-		                w = "score_" + (this.winner[1][0]);
-		            if (sessionStorage.score) {
-		                p = JSON.parse(p);
-		            }
-		            p[w] ++;
-		            sessionStorage.score = JSON.stringify(p);
-		            this.updateScoreBoard();
-		        }
-		    };
-		    Board.prototype.updateScoreBoard = function () {
-		        if (supports_html5_storage()) {
-		            var p = sessionStorage.score ? JSON.parse(sessionStorage.score) : initScore();
-		            for (var s in p) {
-		                if (p.hasOwnProperty(s)) {
-		                    document.getElementById(s).innerHTML = p[s];
-		                }
-		            }
-		        }
-		    };
 		    Board.prototype.reset = function (x) {
 		        var timer = x || 4000;
 		        window.setTimeout(function () {
 		                window.location.reload(false);
 		            }, timer);
 		    };
-		    Board.prototype.resetScore = function () {
-		        if (supports_html5_storage()) {
-		            sessionStorage.removeItem("score");
-		            this.updateScoreBoard();
-		        }
-		    };
 		    Board.prototype.move = function (coor,color) {
+		    	var moved=false;
 		        var width = this.TILEWIDTH,
 		            ctx = this.CTX;
 		         if (!color)
@@ -196,6 +169,7 @@
 		        //Loop through and find tile that click was detected on
 		        for (var i = 0; i < cnvElement.length; i++)
 		            if (coor.x > cnvElement[i].minX && coor.y > cnvElement[i].minY && coor.x < cnvElement[i].maxX && coor.y < cnvElement[i].maxY) {
+		            		moved=true;
 		            		ctx.strokeStyle = color;
 					        ctx.fillStyle=color;
 		                	roundRect(ctx,cnvElement[i].row,cnvElement[i].col,cnvElement[i].type,
@@ -218,7 +192,7 @@
 				            		}
 		                	break;
 		                }
-		       	return squareActived;
+		       	return {squareN:squareActived,moved:moved};
 		    };
 		    Board.prototype.checkWinner=function(){
 	    		this.isFinished=this.checkFinish();
@@ -248,6 +222,14 @@
 			        		return false;
 			    return true;
 		    }
+		    Board.prototype.getScore=function(color){
+		    	var count=0;
+		    	for (var k = 0; k <this.ROWS ; k++) 
+			        for (var j= 0; j <this.COLS ; j++) 
+			        	if ((typeof gameSquare[k][j] === 'string' || gameSquare[k][j] instanceof String) && gameSquare[k][j]==color)
+			        		count++;
+			    return count;
+		    }
 		   
 		   	function checkSquare(row,col,type){
 		   		//right square
@@ -268,8 +250,7 @@
 		   			break;
 		   		}
 		   	}
-		    function initScore(){
-		    }
+
 		    
 	        
 		

@@ -36,7 +36,8 @@ var game_server = module.exports = {
 			return;
 		var player={
 			username:username,
-			color:this.colors[this.games[id].players.length]
+			color:this.colors[this.games[id].players.length],
+			index:this.games[id].players.length+1
 		};
 		this.games[id].players.push(player);
 		return player;
