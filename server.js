@@ -10,6 +10,7 @@ module.exports = function(app,io){
 
 	var game_server=require("./game_server.js");
 
+
 	app.get('/', function(req, res){
 		// Render views/home.html
 		// Generate unique id for the room
@@ -63,7 +64,8 @@ module.exports = function(app,io){
 					game.in(data.id).emit('startGame', {
 						boolean: true,
 						id: data.id,
-						users:gameSearched.players
+						users:gameSearched.players,
+						type:gameSearched.type
 					});
 				}
 			}

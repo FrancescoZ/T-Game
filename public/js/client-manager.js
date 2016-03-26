@@ -29,6 +29,10 @@ $(function(){
 		logSec.hide();
 		secWait.show('slow');
 	}
+	stopWaiting=function(){
+		secWait.hide();
+		secGame.show('slow');
+	}
 	showMessage=function(message,section){
 	}
 	clickTouch=function(e) {
@@ -148,6 +152,7 @@ $(function(){
 	socket.on('startGame', function(data){
 		console.log(data);
 		if(data.boolean && data.id == id) {
+			stopWaiting();
 			// Initialize Game
 		    board = new Board("game", data.type, data.type,color);
 		    board.draw();
