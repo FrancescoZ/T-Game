@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+
+<!--
+	This file is rendered by express.js, when the rurl /chat/123456 is visited in a browser.
+	It includes jQuery, socket.io.js (it is automatically served by the socket.io library), 
+	and a few more JavaScript files that you should check out.
+-->
+
+<html>
+
+<head>
+
+	<title>Private chat room | Tutorialzine Demo</title>
+
+	<link href="http://fonts.googleapis.com/css?family=Open+Sans Condensed:300italic,300,700" rel="stylesheet" type="text/css">
+	<style type="text/css">
+		* {box-sizing:border-box;}
+        body {width:100%;max-width:700px;padding: 0 20px;margin: 0 auto;font: 20px arial;text-align:center;}
+        h1 {font-size:32px;width:100%;margin:20px auto;}
+        #game,#reset {margin: 20px auto 0;display: block;width:100%;}
+		#scoreboard {border:2px solid #ccc;width:100%;margin:10px auto;padding:10px;}
+		ul {display:flex;list-style:none;margin:0;padding:0;width:100%;}
+		li {margin:0;padding:0;flex-grow:1;}
+		button {border:1px solid #ccc;background:#fefefe;padding:7px 14px;margin:10px 20px;}
+	</style>
+
+</head>
+
+<body>
+
+	<header class="banner">
+
+		<h1 class="bannertext">
+			<a href="http://tutorialzine.com/2014/03/nodejs-private-webchat/" id="logo">Tutorial<span>zine</span>: NODE.JS CHAT TUTORIAL</a>
+		</h1>
+
+	</header>
+	<div id="scoreboard">
+        <ul> 
+            <li>X: <span id="score_x"></span></li>
+            <li>Ties: <span id="score_tie"></span></li>
+            <li>O: <span id="score_o"></span></li>
+        </ul>
+    </div>
+	<section style="display:block; overflow: hidden; border: 1px solid black; padding:10px; ">
+    		<aside style="display:block; float: left; width: 150px; color:black;"> 
+		Players 
+		<style> /* make dots bigger relatively to the text */
+			li {
+			    font-size:2em;
+			}
+			li span {
+			    font-size:0.5em;
+			}
+		</style> 
+			<dl> 	<!-- color and name must be imported from the js file and replaced -->
+				<span style="color: blue;">
+            			<li><span> Bob </span></li>
+				<span style="color: #FF0000;">
+            			<li><span> Alfred </span></li>
+				<span style="color: brown;">
+            			<li><span> Jim </span></li>
+        		</dl>
+		</aside>
+    	<div style="margin-left:150px;">
+    
+
+	<section class="section">
+		<canvas id="game" width="500" height="500">
+        	This text is displayed if your browser does not support HTML5 Canvas.
+    	</canvas>
+	</section>
+
+	<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+	<script type="text/javascript">
+		var cnvElement=[];
+		var sqrElement=[];
+		var gameSquare=[];
+
+		class ClickableArea{
+
+			constructor(type,row,col,minX,maxX,minY,maxY){
+				this.minY=minY;
+				this.minX=minX;
+				this.maxY=maxY;
+				this.maxX=maxX;
+				this.row=row;
+				this.col=col;
+				this.type=type;
+			}
+		}
+
+		function circle(ctx,x,y,d,fill,stroke){
+			ctx.beginPath();
+			ctx.arc(x, y, d/2, 0, 2 * Math.PI, false);
+		    if (stroke)
+		    	ctx.stroke();
+		    if (fill)
+		    	ctx.fill();
+		}
+
+		function roundRect(ctx,row,col,type, x, y, width, height, radius, fill, stroke) {
+  			  
+
+			  if (typeof stroke == "undefined" ) {
+			    stroke = true;
+			  }
+			  if (typeof radius === "undefined") {
+			    radius = 5;
+			  }
+			  ctx.beginPath();
+			  ctx.moveTo(x + radius, y);
+			  ctx.lineTo(x + width - radius, y);
+			  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+			  ctx.lineTo(x + width, y + height - radius);
+			  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+			  ctx.lineTo(x + radius, y + height);
+			  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+			  ctx.lineTo(x, y + radius);
+			  ctx.quadraticCurveTo(x, y, x + radius, y);
+			  ctx.closePath();
+			  if (stroke) {
+			    ctx.stroke();
+			  }
+			  if (fill) {
+			    ctx.fill();
+			  }
+
+			  ctx.fillStyle = "red";
+		      ctx.font = "10pt sans-serif";
+		      if (type==='s')
+		      	x+=(width/2)-10;
+		      ctx.fillText(row+','+col, x, y+(height/2));
+
+			  return new ClickableArea(type,row,col,x,x+width,y,y+height);   
+		}
+
+		(function () {
+		    function Board(id, c, r) {
+		        if (this instanceof Board) {
+		            this.CANVAS = document.getElementById(id);
+		            this.CTX = this.CANVAS.getContext("2d");
+		            this.WIDTH = this.CANVAS.width || 0;
+		            this.HEIGHT = this.CANVAS.height || 0;
+		            this.COLS = c || 5;
+		            this.ROWS = r || 5;
+		            this.TILEMARGINTOP=12;
+		            this.TILEMARGINSIDE=0;
+		            this.TILEWIDTH = (this.WIDTH / this.COLS)-5;
+		            this.TILEHEIGHT = (this.HEIGHT / this.ROWS)-5;
+		            this.moveCount = 0;
+		            this.board = this.gameBoard(this.TILEWIDTH, this.COLS, this.ROWS);
+		            this.CANVAS.addEventListener('selectstart', function (e) {
+		                e.preventDefault();
+		                return false;
+		            }, false);
+		            this.winner = [false, ""];
+		            this.boardDisabled = false;
+		        } else {
+		            return new Board(id, c, r);
+		        }
+		    }
+		    Board.prototype.draw = function () {
+		        var ctx = this.CTX;
+		        
+		        ctx.strokeStyle = "#FFFFFF";
+		        ctx.fillStyle="#e6e6e6";
+
+		        //ligne
+		        // Draw column dividers
+		        for (var i = 0; i <= this.ROWS ; i++) 
+			        for (var j= 0; j <= this.COLS ; j++) 
+			        	if (this.HEIGHT>(this.TILEHEIGHT*i+this.TILEMARGINTOP+this.TILEHEIGHT-10)){
+			        		ctx.strokeStyle = "#FFFFFF";
+					        ctx.fillStyle="#e6e6e6";
+				            cnvElement.push(
+				            	roundRect(ctx,i,j,'c',
+				            		this.TILEWIDTH * j+this.TILEMARGINSIDE,this.TILEHEIGHT*i+this.TILEMARGINTOP,
+				            		12,this.TILEHEIGHT-10,7,true,true));
+			        	}
+
+		        //Draw horizontal dividers
+		        for (var i = 0; i <= this.ROWS ; i++) 
+		        	for (var j= 0; j <= this.COLS ; j++) 
+		        		if (this.WIDTH>(this.TILEWIDTH * j+this.TILEMARGINSIDE+15+this.TILEWIDTH-15)){
+		        			ctx.strokeStyle = "#FFFFFF";
+					        ctx.fillStyle="#e6e6e6";
+			            	cnvElement.push(
+			            		roundRect(ctx,i,j,'r',
+			            			this.TILEWIDTH * j+this.TILEMARGINSIDE+15,this.TILEHEIGHT*i,
+			            			this.TILEWIDTH-15,13,7,true,true));
+		        		}
+			    //square
+			    for (var i = 0; i <= this.ROWS ; i++) 
+			        for (var j= 0; j <= this.COLS ; j++) 
+			        	if (this.WIDTH>(this.TILEWIDTH * j+this.TILEMARGINSIDE+15+this.TILEWIDTH-15) && (this.HEIGHT>(this.TILEHEIGHT*i+this.TILEMARGINTOP+this.TILEHEIGHT-10))){
+			        		ctx.strokeStyle = "#FFFFFF";
+					        ctx.fillStyle="#e6e6e6";
+			        	    sqrElement.push(roundRect(ctx,i,j,'s',
+			            			this.TILEWIDTH * j+this.TILEMARGINSIDE+19,this.TILEHEIGHT*i+19,
+			            			this.TILEWIDTH-25,this.TILEWIDTH-25,7,true,true));
+			        	}
+			    gameSquare=new Array(this.ROWS);
+				for (var i = 0; i < this.ROWS; i++) 
+					gameSquare[i] = new Array(this.COLS);
+				for (var i = 0; i <this.ROWS ; i++) 
+			        for (var j= 0; j <this.COLS ; j++) 
+			        	gameSquare[i][j]=0;
+				
+		    };
+		    Board.prototype.gameBoard = function (t, c, r) {
+		        var b = [],
+		            count = 0;
+		        // Create gameboard array with the following data:
+		        // [x pos, y pos, tile count, empty string for move symbol (x or o)]
+		        for (var y = 0; y < r; y++) {
+		            for (var x = 0; x < c; x++) {
+		                b.push([x * t, y * t, count++, ""]);
+		            }
+		        }
+		        return b;
+		    };
+		    Board.prototype.updateScore = function () {
+		        if (supports_html5_storage()) {
+		            var p = sessionStorage.score || {
+		                    "score_x": 0,
+		                    "score_o": 0
+		                },
+		                w = "score_" + (this.winner[1][0]);
+		            if (sessionStorage.score) {
+		                p = JSON.parse(p);
+		            }
+		            p[w] ++;
+		            sessionStorage.score = JSON.stringify(p);
+		            this.updateScoreBoard();
+		        }
+		    };
+		    Board.prototype.updateScoreBoard = function () {
+		        if (supports_html5_storage()) {
+		            var p = sessionStorage.score ? JSON.parse(sessionStorage.score) : {
+		                "score_x": 0,
+		                "score_o": 0
+		            };
+		            for (var s in p) {
+		                if (p.hasOwnProperty(s)) {
+		                    document.getElementById(s).innerHTML = p[s];
+		                }
+		            }
+		        }
+		    };
+		    Board.prototype.reset = function (x) {
+		        var timer = x || 4000;
+		        window.setTimeout(function () {
+		                window.location.reload(false);
+		            }, timer);
+		    };
+		    Board.prototype.resetScore = function () {
+		        if (supports_html5_storage()) {
+		            sessionStorage.removeItem("score");
+		            this.updateScoreBoard();
+		        }
+		    };
+		    Board.prototype.move = function (coor) {
+		        var width = this.TILEWIDTH,
+		            ctx = this.CTX;
+		            
+		        //Loop through and find tile that click was detected on
+		        for (var i = 0; i < cnvElement.length; i++) {
+		            if (coor.x > cnvElement[i].minX && coor.y > cnvElement[i].minY && coor.x < cnvElement[i].maxX && coor.y < cnvElement[i].maxY) {
+		            		ctx.strokeStyle = "#6699ff";
+					        ctx.fillStyle="#6699ff";
+		                	roundRect(ctx,cnvElement[i].row,cnvElement[i].col,cnvElement[i].type,
+			            			cnvElement[i].minX,cnvElement[i].minY,
+			            			cnvElement[i].maxX-cnvElement[i].minX, cnvElement[i].maxY-cnvElement[i].minY,
+			            			7,true,true);
+		                	var row=cnvElement[i].row,col=cnvElement[i].col,type=cnvElement[i].type;
+		                	cnvElement.splice(i,1);
+		                	checkSquare(row,col,type);
+		                	for (var k = 0; k <this.ROWS ; k++) 
+						        for (var j= 0; j <this.COLS ; j++) 
+						        	if (gameSquare[k][j]>=4){
+						        		ctx.strokeStyle = "#6699ff";
+					        			ctx.fillStyle="#6699ff";
+						        		roundRect(ctx,k,j,'s',
+				            				this.TILEWIDTH * j+this.TILEMARGINSIDE+19,this.TILEHEIGHT*k+19,
+				            				this.TILEWIDTH-25,this.TILEWIDTH-25,7,true,true)  
+				            			gameSquare[k][j]=0;
+				            		}
+		                	break;
+		                }
+		                
+		               
+		        }
+		    };
+		   
+		   	function checkSquare(row,col,type){
+		   		//right square
+		   		switch(type){
+		   			case 'r':
+		   				if (row<5 && row>=0 && col>=0 && col<5)	
+		   					gameSquare[row][col]++;
+		   				if (row-1>=0)
+		   					gameSquare[row-1][col]++;
+					break;
+		   			case 'c':
+		   				if (row<5 && col<5)	
+		   					gameSquare[row][col]++;
+		   				if (col-1>=0)
+		   					gameSquare[row][col-1]++;
+		   			break;
+		   			case 's':
+		   			break;
+		   		}
+		   				
+		   	}
+
+		    function checkWinner(mArr) {
+		        var winner = [false, ""];
+		        for (var i = 0; i < mArr.length; i++) {
+		            var hor = [],
+		                ver = [],
+		                diag = [];
+		            if (mArr[i][3] !== "") {
+		                //horizontal
+		                if (i % 3 === 0) {
+		                    for (var j = 0; j < 3; j++) {
+		                        hor.push([mArr[i + j][3], i + j]);
+		                    }
+		                    if (hor.length === 3) {
+		                        winner = isWinner(hor);
+		                        if (winner[0]) {
+		                            return winner;
+		                        }
+		                    }
+		                }
+		                //vertical && diag/anti diag
+		                if (i < 3) {
+		                    for (var j = 0; j + i < mArr.length; j += 3) {
+		                        ver.push([mArr[i + j][3], i + j]);
+		                    }
+		                    if (ver.length === 3) {
+		                        winner = isWinner(ver);
+		                        if (winner[0]) {
+		                            return winner;
+		                        }
+		                    }
+		                    if (i !== 1) {
+		                        for (var z = 0; z + i < mArr.length - i; z += (4 - i)) {
+		                            diag.push([mArr[i + z][3], i + z]);
+		                        }
+		                        if (diag.length === 3) {
+		                            winner = isWinner(diag);
+		                            if (winner[0]) {
+		                                return winner;
+		                            }
+		                        }
+		                    }
+		                }
+		            }
+		        }
+		        return winner;
+		    }
+
+		    function isWinner(arr) {
+		        arr.sort();
+		        var w = arr[0][0] && arr[0][0] === arr[arr.length - 1][0] ? [true].concat(arr) : [false, ""];
+		        return w;
+		    }
+
+		    function moveO(x, y, r, ctx, fill, lineW) {
+		        var x = x + r / 2,
+		            y = y + r / 2,
+		            r = r / 2 - (r * 0.15);
+		        ctx.beginPath();
+		        ctx.lineWidth = lineW || 3;
+		        ctx.strokeStyle = fill || "#333";
+		        ctx.arc(x, y, r, 0, 2 * Math.PI);
+		        ctx.stroke();
+		    }
+
+		    function moveX(x, y, w, ctx, fill, lineW) {
+		        var pad = w * 0.15,
+		            lineCoor = [
+		                [
+		                    [x + pad, y + pad], //line 1 start
+		                    [x + w - pad, y + w - pad] //line 1 end
+		                ],
+		                [
+		                    [x + pad, y + w - pad], //line 2 start
+		                    [x + w - pad, y + pad] //line 2 end
+		                ]
+		            ];
+		        ctx.beginPath();
+		        ctx.lineWidth = lineW || 3;
+		        ctx.strokeStyle = fill || "#333";
+		        for (var i = 0; i < 2; i++) {
+		            ctx.moveTo(lineCoor[i][0][0], lineCoor[i][0][1]);
+		            ctx.lineTo(lineCoor[i][1][0], lineCoor[i][1][1]);
+		        }
+		        ctx.stroke();
+		    }
+
+		    function clickTouch(e) {
+		        var coor = b.CANVAS.relMouseCoords(e);
+		        if (!b.winner[0]) {
+		            b.move(coor);
+		        }
+		    }
+
+		    function clickTouchReset(e) {
+		            var target = e.target.id;
+		            if (target === "resetScore" && confirm("Are you sure you want to reset the score?")) {
+		                b.resetScore();
+		            } else if (target === "resetGame") {
+		                b.reset(1);
+		            }
+		        }
+		        // Initialize Game
+		    var b = new Board("game", 5, 5),
+		        resetcon = document.getElementById("reset");
+		    b.draw();
+		    b.updateScoreBoard();
+		    //Add event listeners for click or touch
+		    window.addEventListener("click", clickTouch, false);
+		    window.addEventListener("touchstart", clickTouch, false);
+		    //resetcon.addEventListener("click", clickTouchReset, false);
+		    //resetcon.addEventListener("touchstart", clickTouchReset, false);
+		})();
+		/*****
+		Get Mouse click coordinates within canvas
+		Modified to include touch events
+		Source: http://stackoverflow.com/a/9961416
+		******/
+		HTMLCanvasElement.prototype.relMouseCoords = function (event) {
+		    var totalOffsetX = 0,
+		        totalOffsetY = 0,
+		        canvasX = 0,
+		        canvasY = 0,
+		        touch = event.touches,
+		        currentElement = this;
+		    do {
+		        totalOffsetX += currentElement.offsetLeft;
+		        totalOffsetY += currentElement.offsetTop;
+		    }
+		    while (currentElement = currentElement.offsetParent)
+		    canvasX = (touch ? touch[0].pageX : event.pageX) - totalOffsetX;
+		    canvasY = (touch ? touch[0].pageY : event.pageY) - totalOffsetY;
+		    canvasX = Math.round(canvasX * (this.width / this.offsetWidth));
+		    canvasY = Math.round(canvasY * (this.height / this.offsetHeight));
+		    return {
+		        x: canvasX,
+		        y: canvasY
+		    }
+		}
+
+		function supports_html5_storage() {
+		    try {
+		        return 'sessionStorage' in window && window.sessionStorage !== null;
+		    } catch (e) {
+		        return false;
+		    }
+		}
+	</script>
+	<script type="text/javascript">
+		var CANVAS_WIDTH = 480;
+		var CANVAS_HEIGHT = 320;
+
+		var canvasElement = $("<canvas width='" + CANVAS_WIDTH + 
+		                      "' height='" + CANVAS_HEIGHT + "'></canvas>");
+		var canvas = canvasElement.get(0).getContext("2d");
+		canvasElement.appendTo('body');
+		var FPS = 30;
+		setInterval(function() {
+		  update();
+		  draw();
+		}, 1000/FPS);
+
+		var textX = 50;
+		var textY = 50;
+
+		function update() {
+		  textX += 1;
+		  textY += 1;
+		  if (textX>CANVAS_WIDTH)
+		  	textX=50;
+		  if (textY>CANVAS_HEIGHT)
+		  	textY=50;
+		}
+
+		function draw() {
+		  canvas.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+		  canvas.fillStyle = "#000";
+		  canvas.fillText("Sup Bro!", textX, textY);
+		}
+	</script>
+    </div>
+</section>
+</body>
+
+</html>
