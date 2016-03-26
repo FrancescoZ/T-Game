@@ -14,7 +14,7 @@
 					T-Game
 				</h1>
 		</header>
-		<section id="logSec" class="sec">
+		<section id="logSec" class="sec" style="displa:none;">
 			<!-- These elements are displayed as white info cards in the middle of the screen -->
 			<div class="main">
 				<div class="col">
@@ -27,11 +27,10 @@
 						<input type="text" id="userEmail" placeholder="Your email address" /><br/>
 						<span class="dropdown">
 						    <select id="matchType">
-						        <option value="5">5x5</option>
-						        <option value="20">20x20<option>
-						        <option value="50">50x50</option>
-						        <option value="100">100x100</option>
-						        <option value="150">150x150</option>
+						        <option value="4">4x4</option>
+						        <option value="5">5x5<option>
+						        <option value="6">6x6</option>
+						        <option value="8">8x8</option>
 						    </select>
 						</span>
 						<br/>
@@ -43,23 +42,33 @@
 				</div>
 			</div>
 		</section>
-		<section id="secWait" class="sec">
+		<section id="secWait" class="sec" style="displa:none;">
 			<div class="main">
 				<div class="center col">
 					<ul class="bokeh">
 					</ul>
 					<br/>
-					<h4>We are wainting for other player, right now you are just <span id="numPlayerInfo">1</span></h4>
+					<h4>We are wainting for other player, right now you are just <span id="numPlayerInfo">1</span><br/>You can invite people sending this <a href="" id="linkGame" target="link"> link</a></h4>
+
 				</div>
 			<div>
 		</section>
-		<section id="secGame" class="sec">
+		<section id="secGame" class="sec" style="displa:none;">
 			<div class="main">
-				<div class="col" id="scoreboard">
-			        <ol class="user-list">
-					</ol>
+				<div class="scoreboard" id="scoreboard">
+			        <ul class="userList">
+			        	<li><div id="badge1" class="not point red profileImg" data-badge="3"><span id="name1" class="name">Francesco</span></div></li>
+			        	<li><div id="badge2" class="not point green profileImg" data-badge="3"><span id="name2" class="name">Federico</span></div></li>
+			        	<li><div id="badge3" class="not point blu profileImg" data-badge="3"><span id="name3" class="name">Thiago</span></div></li>
+			        	<li><div id="badge4" class="not point orange profileImg" data-badge="3"><span id="name4" class="name">Massimiliano</span></div></li>
+			        	<li><div id="badge5" class="not point purple profileImg" data-badge="3"><span id="name5" class="name">Andy</span></div></li>
+					</ul>
 			    </div>
-				<div class="class">
+			    <div style="displa:none;"> 
+			    	<div class="modal" id="timerDiv"><span id="timeTxt" class="textModal"></span></div>
+			    </div>
+				<div class="gameBoard">
+
 					<canvas id="game" width="500" height="500">
 			        	This text is displayed if your browser does not support HTML5 Canvas.
 			    	</canvas>

@@ -14,14 +14,126 @@
 
 	<link href="http://fonts.googleapis.com/css?family=Open+Sans Condensed:300italic,300,700" rel="stylesheet" type="text/css">
 	<style type="text/css">
-		* {box-sizing:border-box;}
-        body {width:100%;max-width:500px;padding: 0 20px;margin: 0 auto;font: 20px arial;text-align:center;}
-        h1 {font-size:32px;width:100%;margin:20px auto;}
-        #game,#reset {margin: 20px auto 0;display: block;width:100%;}
-		#scoreboard {border:2px solid #ccc;width:100%;margin:10px auto;padding:10px;}
-		ul {display:flex;list-style:none;margin:0;padding:0;width:100%;}
-		li {margin:0;padding:0;flex-grow:1;}
-		button {border:1px solid #ccc;background:#fefefe;padding:7px 14px;margin:10px 20px;}
+		*:focus {outline: none;}
+		body {
+			background-color: #f0f1f3;
+			color:#667073;
+			font: 16px/1.3 'Arial',sans-serif;
+		}
+
+		.banner {
+			height: 5em;
+			background-color: #3c4446;
+		}
+		.bannertext {
+			text-align:center;
+			padding-top: 0.5em;
+			font-family: 'Open Sans Condensed',serif;
+			font-weight: bold;
+			color:white;
+		}
+		.bannertext span {
+			color: #d6441b;
+		}
+
+		.main {
+			width: 97%;
+		    min-width: 50em;
+			text-align:center;
+			margin:1em;
+			background-color: #ffffff;
+			border-radius: 0.3em;
+			box-shadow:0.1em 0.5em 0.3em #e3e4e6;
+			color: #637277;
+			display: inline-flex;
+		}
+		.main h2 {
+			overflow: hidden;
+		}
+
+		.modal{
+		      padding: 0.2em;
+		      background-color: rgba(241,196,15,0.5);
+		      border-radius: 0.1em;
+		      text-align: center;
+		      font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
+		      font-size: 20px;
+		      z-index: 11;
+		  }
+
+		  .textModal{
+		    opacity: 0.7
+		  }
+
+
+		.col{
+			margin: 3em 0em 0em 15%;
+		}
+
+		.scoreboard{
+			margin: 5em 9% 0em 3%;
+		}
+		.center{
+		  margin:2em 0em 2em 33%;
+		}
+		.profileImg {
+			float: left;
+			border-radius: 50%;
+		}
+
+		.red{
+			background: #e60000;
+			border-left-color: #e60000;
+		}  
+		.green{
+			background: #009900;
+			border-left-color: #009900;
+		} 
+		.blu{
+			background: #3385ff;
+			border-left-color: #3385ff;
+		}
+		.orange {
+			background: #ff9900;
+			border-left-color: #ff9900;
+		} 
+		.purple {
+			background: #c61aff;
+			border-left-color: #c61aff;
+		} 
+
+		.name{
+			margin: 0em 0em 0em 2.5em;
+		}
+		.point{
+			width: 1.5em;
+			height: 1.5em;
+			margin: 0em 0em 1em 0em;
+		}
+
+		.userList{
+		    list-style-type: none;
+		}
+		.gameBoard{
+		  margin:3em 0em 0em 5em;
+		}
+.not {
+   position:relative;
+}
+.not[data-badge]:after {
+   content:attr(data-badge);
+   position:absolute;
+   top:-7px;
+   right:-10px;
+   font-size:.7em;
+   background:green;
+   color:white;
+   width:18px;height:18px;
+   text-align:center;
+   line-height:18px;
+   border-radius:50%;
+   box-shadow:0 0 1px #333;
+}
 	</style>
 
 </head>
@@ -43,11 +155,28 @@
         </ul>
     </div>
 
-	<section class="section">
-		<canvas id="game" width="500" height="500">
-        	This text is displayed if your browser does not support HTML5 Canvas.
-    	</canvas>
-	</section>
+	<section id="secGame" class="sec" style="displa:none;">
+			<div class="main">
+				<div class="scoreboard" id="scoreboard">
+			        <ul class="userList">
+			        	<li><div id="badge2" class="not point green profileImg" data-badge="3"><span id="name1" class="name">Francesco</span></div></li>
+			        	<li><div id="badge2" class="not point red profileImg" data-badge="3"><span id="name2" class="name">Federico</span></div></li>
+			        	<li><div id="badge3" class="not point purple profileImg" data-badge="3"><span id="name3" class="name">Thiago</span></div></li>
+			        	<li><div id="badge4" class="not point blu profileImg" data-badge="3"><span id="name4" class="name">Massimiliano</span></div></li>
+			        	<li><div id="badge5" class="not point orange profileImg" data-badge="3"><span id="name5" class="name">Andy</span></div></li>
+					</ul>
+			    </div>
+			    <div style="displa:none;"> 
+			    	<div class="modal" id="timerDiv"><span id="timeTxt" class="textModal"></span></div>
+			    </div>
+				<div class="gameBoard">
+
+					<canvas id="game" width="500" height="500">
+			        	This text is displayed if your browser does not support HTML5 Canvas.
+			    	</canvas>
+				</div>
+			</div>
+		</section>
 
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 	<script type="text/javascript">
@@ -78,7 +207,7 @@
 		}
 
 		function roundRect(ctx,row,col,type, x, y, width, height, radius, fill, stroke) {
-  			  
+  			  $('#name1').text("IOOIOIO");
 
 			  if (typeof stroke == "undefined" ) {
 			    stroke = true;

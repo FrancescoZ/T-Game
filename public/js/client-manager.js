@@ -10,6 +10,7 @@ $(function(){
 	var name = "",
 		email = "",
 		color = "",
+		index="",
 		board="",
 		waitingGame=false,
 		myTurn=false,
@@ -23,7 +24,9 @@ $(function(){
 		secWait=$("#secWait"),
 		secGame=$("#secGame"),
 		numberPlayer=$('#playernum'),
-		selectType=$("#matchType");
+		selectType=$("#matchType"),
+		secTimer=$('#timerDiv');
+		timer=$('#timeTxt');
 
 	startWaiting=function(){
 		logSec.hide();
@@ -33,19 +36,40 @@ $(function(){
 		secWait.hide();
 		secGame.show('slow');
 	}
-	showMessage=function(message,section){
+	showTimer=function(count){
+		secTimer.show("fade");
+		timer.text(count);
 	}
-	clickTouch=function(e) {
-		        var coor = board.CANVAS.relMouseCoords(e);
-		        if (!board.isFinished && myTurn) {
-		            var idClicked=board.move(coor);
-		            socket.emit('move', idClicked);
-		            myTurn=false;
-		            if (board.checkWinner())
-		            	theWinnerIs();
-		        }
+	stopTimer=function(){
+		secTimer.hide();
 	}
-	newGame=function(nUser,typeGame){
+	endGame=function(winner){
+	}
+	clickTouch=function(e){ 
+        var coor = board.CANVAS.relMouseCoords(e);
+        if (!board.isFinished && myTurn) {
+            var result=board.move(coor);
+            if (!result.moved)
+            	return;
+            updateScoreBoard(color,index);
+            socket.emit('played', {
+            	coor:coor,
+            	color:color,
+            	id:id,
+            	index:index,
+            	squareClicked:result.squareN
+            });
+            myTurn=false;
+            var winner=board.checkWinner();
+            if (winner){
+            	socket.emit('gameEnd',{
+            		id:id,
+            		winner:winner
+            	})
+        	}
+		}
+	}
+	setNewGame=function(nUser,typeGame){
 		if (nUser){
 			numberPlayer.attr('disabled', 'disabled');
 			numberPlayer.val(nUser);
@@ -70,6 +94,17 @@ $(function(){
 			socket.emit('login', {user: username, email: userEmail,matchType:type,maxGamer:maxGmr, id: id});
 		}
 	}
+	updateScoreBoard=function(color,i){
+		$('#badge'+i).attr('data-badge', board.getScore(color));
+	}
+	initScoreBoard=function(players){
+		for(var i=0;i<players.length;i++){
+			$('#badge'+(i+1)).show();
+			$('#badge'+(i+1)).attr('data-badge', 0);
+			$('#name'+(i+1)).text(players[i].username);
+		}
+
+	}
 
 	// on connection to server get the id of person's room
 	socket.on('connect', function(){
@@ -85,12 +120,13 @@ $(function(){
 		console.log('roomDetail received');
 		console.log(data);
 		if (data.number===0)
-			newGame();
+			setNewGame();
 		else{
-			newGame(data.nusers,data.type);
+			setNewGame(data.nusers,data.type);
 			for (var i=0;i<data.number;i++)
 				$(".bokeh").append('<li></li>');
-			$("#numPlayerInfo").text(data.number);
+			$("#numPlayerInfo").text(i);
+			$("#linkGame").attr("http://localhost:8080/home/"+id);
 		}
 		loginForm.on('submit', function(e){
 				e.preventDefault();
@@ -103,11 +139,13 @@ $(function(){
 				return false;
 			});
 	});
-	socket.on('watchDog',function(){
-		socket.emit('answers',{status:'connected'});
+	socket.on('timer',function(data){
+		if (!myTurn && data.id==id)
+			showTimer(data.second);
 	})
 	socket.on('loggedin', function(data){
-		color = data;
+		color = data.color;
+		index=data.index;
 		waitingGame=true;
 		startWaiting();
 	});
@@ -145,6 +183,7 @@ $(function(){
 		if (gamers.length<=maxGamer){
 			$(".bokeh").append('<li></li>');
 			$("#numPlayerInfo").text(gamers.length);
+			$("#linkGame").attr("http://localhost:8080/home/"+id);
 		}
 		if (waitingGame && gamers.length==maxGamer)
 			showMessage("StartingGame",secWait);
@@ -152,34 +191,38 @@ $(function(){
 	socket.on('startGame', function(data){
 		console.log(data);
 		if(data.boolean && data.id == id) {
-			stopWaiting();
 			// Initialize Game
+			stopWaiting();
 		    board = new Board("game", data.type, data.type,color);
 		    board.draw();
-		    board.updateScoreBoard();
+		   	initScoreBoard(data.users);
 		    //Add event listeners for click or touch
 		    window.addEventListener("click", clickTouch, false);
 		    window.addEventListener("touchstart", clickTouch, false);
 		}
 	});
-	socket.on('move',function(data){
-		board.move(data.coor,data.color);
-	})
-	socket.on('yourTurn',function(data){
-		console.log(data);
-		if(data.boolean && data.id == id) 
-			myTurn=true;
-	});
-	socket.on('enemyTurn',function(data){
-		if(data.boolean && data.id == id){
-			board.move(data.coordinates,data.color);
-			if (board.checkWinner())
-				theWinnerIs();	
+	socket.on('moved',function(data){
+		if (data.color!=color){
+			board.move(data.coor,data.color);
+			updateScoreBoard(data.color,data.index);
 		}
 	});
+	socket.on('turn',function(data){
+		console.log(data);
+		if(data.boolean && data.id == id && data.color==color) {
+			myTurn=true;
+			stopTimer();
+		}
+		else
+			showTimer();
+	});
+	socket.on('end',function(data){
+		if (data.id==id)
+			endGame(data.color==color);
+	});
+
 });
 
-function theWinnerIs(){}
 
 function scrollToBottom(){
 	$("html, body").animate({ scrollTop: $(document).height()-$(window).height() },1000);
