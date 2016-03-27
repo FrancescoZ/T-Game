@@ -50,12 +50,16 @@ module.exports = function(app,io){
 				// Use the socket object to store data. Each client gets
 				// their own unique socket object
 				
-				var player=game_server.addPlayer(data.user,gameSearched.id);
+				var player=game_server.addPlayer(data.user,gameSearched.id,data.email);
 				// Add the client to the room
 				socket.join(data.id);
 				socket.emit('loggedin',{
+					username:player.username,
 					color:player.color,
-					index:player.index
+					index:player.index,
+					type:gameSearched.type,
+					max:gameSearched.maxGamer,
+					mail:player.mail
 				});
 				game.in(data.id).emit('peopleloggedin', {
 						username:player.username,
@@ -83,7 +87,7 @@ module.exports = function(app,io){
 						game.in(data.id).emit("timer",{
 							id:data.id,
 							second:timer});
-						if (timer>40){
+						/*if (timer>40){
 							game_server.playerMoved(data.id,0);
 							game.in(data.id).emit('turn',{
 								color:gameSearched.players[gameSearched.activePlayer].color,
@@ -93,7 +97,7 @@ module.exports = function(app,io){
 							});
 							clearInterval(interval);
 							setInterval(interval,1000);
-						}
+						}*/
 					};
 					setInterval(interval,1000);
 
@@ -121,9 +125,9 @@ module.exports = function(app,io){
 			var gameSearched=game_server.findGame(data.id);
 			if (!gameSearched)
 				return;
-			var pl=game_server.getPlayer(id,data.winnerColor);
+			var pl=game_server.getPlayer(data.id,data.winnerColor);
 			game.in(data.id).emit('end',{
-				winner:data.color,
+				winner:data.username,
 				winnerId:data.index,
 				id:data.id,
 				again:gameSearched.players.length>1

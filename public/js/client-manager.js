@@ -31,30 +31,38 @@ $(function(){
 		timer=$('#timeTxt'),
 		againBtn=$('#playAgain'),
 		winnerName=$('#userWinnerName'),
+		notAllow=$('#secNotAllow'),
 		endForm=$('.overlay');
 
 	startWaiting=function(){
 		waitingGame=true;
-		logSec.hide();
-		secWait.show('slow');
+		logSec.fadeOut(1200);
+		secWait.fadeIn(1200);
 	}
 	stopWaiting=function(){
 		playing=true;
 		waitingGame=false
-		secWait.hide();
-		secGame.show('slow');
+		secWait.fadeOut(1200);
+		secGame.fadeIn(1200);
 	}
 	showTimer=function(count){
-		secTimer.show("fade");
+		secTimer.fadeIn(1200);
 		timer.text(count);
 	}
 	stopTimer=function(){
-		secTimer.hide();
+		secTimer.fadeOut(1200);
 		timer.text('0');
 	}
 	endGame=function(winner,again){
 		if (!again)
-			againBtn.hide();
+			againBtn.fadeOut(1200);
+		else
+			againBtn.on('click',function(){
+				sessionStorage.setItem('id',-1);
+				sessionStorage.removeItem('color');
+				sessionStorage.setItem('active',false);
+				location.reload();
+			});
 		winnerName.text(winner);
 		endForm.fadeToggle("fast");
 	}
@@ -71,11 +79,32 @@ $(function(){
 				return {
 					id:sessionStorage.getItem('id'),
 					color:sessionStorage.getItem('color'),
-					index:sessionStorage.getItem('index')
+					index:sessionStorage.getItem('index'),
+					type:sessionStorage.getItem('type'),
+					username:sessionStorage.getItem('username'),
+					email:sessionStorage.getItem('email'),
+					maxGamer:sessionStorage.getItem('max')
 				};
 			else if (sessionStorage.getItem('id')==-1 && !sessionStorage.getItem('userName'))
-				return {};
+				return {
+					type:sessionStorage.getItem('type'),
+					username:sessionStorage.getItem('username'),
+					email:sessionStorage.getItem('email'),
+					maxGamer:sessionStorage.getItem('max')
+				};
 		return;
+	}
+	saveLogin=function(username,userEmail,id,type,maxGmr,index,color){
+		if (!supports_html5_storage())
+			return;
+		sessionStorage.setItem('id',id);
+		sessionStorage.setItem('username',username);
+		sessionStorage.setItem('email',userEmail);
+		sessionStorage.setItem('type',type);
+		sessionStorage.setItem('max',maxGmr);
+		sessionStorage.setItem('color',color);
+		sessionStorage.setItem('index',index);
+		sessionStorage.setItem('active',true);
 	}
 	clickTouch=function(e){ 
         var coor = board.CANVAS.relMouseCoords(e);
@@ -100,16 +129,38 @@ $(function(){
             	});
 		}
 	}
-	setNewGame=function(nUser,typeGame){
+	notAllowDouble=function(){
+		logSec.fadeOut();
+		secGame.fadeOut();
+		secWait.fadeOut();
+		notAllow.fadeIn();
+
+	}
+	checkOtherSessionActive=function(){
+		if (supports_html5_storage())
+			return (sessionStorage.getItem('active') && sessionStorage.getItem('id')==id);
+		return false;
+	}
+	setNewGame=function(nUser,typeGame,username,mail){
 		if (nUser){
-			numberPlayer.attr('disabled', 'disabled');
+			if (!username)
+				numberPlayer.attr('disabled', 'disabled');
 			numberPlayer.val(nUser);
 		}
 		if (typeGame){
-			selectType.attr('disabled', 'disabled');
+			if (!username)
+				selectType.attr('disabled', 'disabled');
 			selectType.val(typeGame);
 		}
-		logSec.show( "slow");
+		if (username){
+			yourName.val(username);
+			yourName.attr('disabled', 'disabled');
+		}
+		if (mail){
+			yourEmail.val(mail);
+			yourEmail.attr('disabled', 'disabled');
+		}
+		logSec.fadeIn(1200);
 	}
 	login=function(username,userEmail,id,type,socket,maxGmr){
 		if(username.length < 1){
@@ -130,7 +181,7 @@ $(function(){
 	}
 	initScoreBoard=function(players){
 		for(var i=0;i<players.length;i++){
-			$('#badge'+(i+1)).show();
+			$('#badge'+(i+1)).fadeIn(1200);
 			$('#badge'+(i+1)).attr('data-badge', 0);
 			$('#name'+(i+1)).text(players[i].username);
 		}
@@ -140,16 +191,20 @@ $(function(){
 	socket.on('connect', function(){
 		if (waitingGame || playing || isEnd)
 			return;
-		$(window).bind('beforeunload', function(){
-			socket.emit("leaving",{
+		window.addEventListener("beforeunload", function (e) {
+  			socket.emit("leaving",{
 				id:id,
 				color:color
 			});
+			sessionStorage.setItem('active',false);
 		});
+		if (checkOtherSessionActive())
+			return notAllowDouble();
 		var user=checkOldPlayer();
 		if (user)
-			socket.emit('reconnected',user);
-		else
+			if (user.color)
+				socket.emit('reconnected',user);
+		if ((user && !user.color) || !user)
 			socket.emit('load', id);
 		$('.sec').hide();
 	});
@@ -157,10 +212,11 @@ $(function(){
 	socket.on('roomDetail',function(data){
 		if (waitingGame)
 			return;
-		console.log('roomDetail received');
-		console.log(data);
-		if (data.number===0)
+		var usr=checkOldPlayer();
+		if (data.number===0 && usr && !usr.username)
 			setNewGame();
+		else if (usr && usr.username)
+			setNewGame(usr.maxGamer,usr.type,usr.username,usr.email);
 		else{
 			setNewGame(data.nusers,data.type);
 			for (var i=0;i<data.number;i++)
@@ -186,6 +242,7 @@ $(function(){
 	socket.on('loggedin', function(data){
 		color = data.color;
 		index=data.index;
+		saveLogin(data.username,data.mail,id,data.type,data.max,index,color);
 		waitingGame=true;
 		startWaiting();
 	});

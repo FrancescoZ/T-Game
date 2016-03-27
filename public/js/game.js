@@ -68,8 +68,8 @@
 		            this.CTX = this.CANVAS.getContext("2d");
 		            this.WIDTH = this.CANVAS.width || 0;
 		            this.HEIGHT = this.CANVAS.height || 0;
-		            this.COLS = c || 5;
-		            this.ROWS = r || 5;
+		            this.COLS = c || 4;
+		            this.ROWS = r || 4;
 		            this.ACTIVECOLOR=clr || "#6699ff";
 		            this.COLOR="#e6e6e6";
 		            this.BORDERCOLOR="#FFFFFF";
@@ -178,7 +178,7 @@
 			            			7,true,true);
 		                	var row=cnvElement[i].row,col=cnvElement[i].col,type=cnvElement[i].type;
 		                	cnvElement.splice(i,1);
-		                	checkSquare(row,col,type);
+		                	this.checkSquare(row,col,type);
 		                	for (var k = 0; k <this.ROWS ; k++) 
 						        for (var j= 0; j <this.COLS ; j++) 
 						        	if (gameSquare[k][j]>=4 && !(typeof gameSquare[k][j] === 'string' || gameSquare[k][j] instanceof String)){
@@ -201,7 +201,7 @@
 	    			for (var k = 0; k <this.ROWS ; k++) 
 				        for (var j= 0; j <this.COLS ; j++) 
 				        	if (typeof gameSquare[k][j] === 'string' || gameSquare[k][j] instanceof String)
-				        		if (gamers.keys().indexOf(gameSquare[k][j])!=-1)
+				        		if (gamers[gameSquare[k][j]])
 				        			gamers[gameSquare[k][j]]++;
 				        		else
 				        			gamers.set(gameSquare[k][j],1);
@@ -230,12 +230,11 @@
 			        		count++;
 			    return count;
 		    }
-		   
-		   	function checkSquare(row,col,type){
+		   	Board.prototype.checkSquare=function(row,col,type){
 		   		//right square
 		   		switch(type){
 		   			case 'r':
-		   				if (row<5 && row>=0 && col>=0 && col<5)	
+		   				if (row<this.ROWS && row>=0 && col>=0 && col<this.COLS)	
 		   					gameSquare[row][col]++;
 		   				if (row-1>=0)
 		   					gameSquare[row-1][col]++;

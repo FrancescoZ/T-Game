@@ -30,13 +30,14 @@ var game_server = module.exports = {
 		}
 		return game;
 	},
-	addPlayer:function(username,id){
+	addPlayer:function(username,id,mail){
 		if (!this.isGame(id))
 			return;
 		if (this.games[id].players.length==this.games[id].maxGamer)
 			return;
 		var player={
 			username:username,
+			mail:mail,
 			color:this.colors[this.games[id].players.length],
 			index:this.games[id].players.length+1
 		};
