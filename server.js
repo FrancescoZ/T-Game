@@ -37,6 +37,10 @@ module.exports = function(app,io){
 				});
 		});
 
+		socket.on('reconnected',function(data){
+			var gameSearched = game_server.isGame(data);
+			
+		});
 		// When the client emits 'login', save his name and color,
 		// and add them to the room
 		socket.on('login', function(data) {
@@ -80,7 +84,7 @@ module.exports = function(app,io){
 							id:data.id,
 							second:timer});
 						if (timer>40){
-							game_server.playerMoved(data.id);
+							game_server.playerMoved(data.id,0);
 							game.in(data.id).emit('turn',{
 								color:gameSearched.players[gameSearched.activePlayer].color,
 								index:gameSearched.players[gameSearched.activePlayer].index,
@@ -104,8 +108,7 @@ module.exports = function(app,io){
 		socket.on('played',function(data){
 			var gameSearched = game_server.findGame(data.id);
 			game.in(data.id).emit('moved',data);
-			if (data.squareClicked==0)
-				game_server.playerMoved(data.id);
+			game_server.playerMoved(data.id,data.squareClicked);
 			game.in(data.id).emit('turn',{
 				color:gameSearched.players[gameSearched.activePlayer].color,
 				boolean: true,
@@ -114,13 +117,38 @@ module.exports = function(app,io){
 			});
 		});
 
+		socket.on('gameEnd',function(data){
+			var gameSearched=game_server.findGame(data.id);
+			if (!gameSearched)
+				return;
+			var pl=game_server.getPlayer(id,data.winnerColor);
+			game.in(data.id).emit('end',{
+				winner:data.color,
+				winnerId:data.index,
+				id:data.id,
+				again:gameSearched.players.length>1
+			});
+			game_server.removeGame(data.id);
+		});
+
 		// Somebody left the chat
-		socket.on('disconnect', function(data) {
+		socket.on('leaving', function(data) {
 			if (!game_server.isGame(data.id))
 				return;
 			var gameSearched = game_server.findGame(data.id);
 			game_server.removePlayer(data.id,data.color);
-			game.in(data.id).emit('leave',data);
+			if (gameSearched.players.length>1){
+				//game.in(data.id).emit('leave',data);
+				return;
+			}
+			else if (gameSearched.players.length==1)
+				game.in(data.id).emit('end',{
+					winner:gameSearched.players[0].username,
+					winnerId:gameSearched.players[0].index,
+					id:data.id,
+					again:false
+				});
+			game_server.removeGame(data.id);
 		});			
 	});
 };

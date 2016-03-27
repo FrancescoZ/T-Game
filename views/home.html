@@ -55,6 +55,9 @@
 		</section>
 		<section id="secGame" class="sec" style="displa:none;">
 			<div class="main">
+				<div style="displa:none;"> 
+			    	<div class="timer" id="timerDiv"><span id="timeTxt"></span></div>
+			    </div>
 				<div class="scoreboard" id="scoreboard">
 			        <ul class="userList">
 			        	<li><div id="badge1" class="not point red profileImg" data-badge="3"><span id="name1" class="name">Francesco</span></div></li>
@@ -64,9 +67,6 @@
 			        	<li><div id="badge5" class="not point purple profileImg" data-badge="3"><span id="name5" class="name">Andy</span></div></li>
 					</ul>
 			    </div>
-			    <div style="displa:none;"> 
-			    	<div class="modal" id="timerDiv"><span id="timeTxt" class="textModal"></span></div>
-			    </div>
 				<div class="gameBoard">
 
 					<canvas id="game" width="500" height="500">
@@ -75,7 +75,14 @@
 				</div>
 			</div>
 		</section>
-
+		<div class="overlay" style="display: none;">
+		    <div class="end-wrapper">
+		        <div class="end-content">
+		        	<h3>The winner is .....<br/><span id="userWinnerName">Francesco</span></h3>
+		        	<input type="button" id="playAgain" value="Again" />
+		        </div>
+		    </div>
+		</div>
 		<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 		<script src="../js/moment.min.js"></script>
 		<script src="/socket.io/socket.io.js"></script>

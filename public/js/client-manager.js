@@ -13,6 +13,8 @@ $(function(){
 		index="",
 		board="",
 		waitingGame=false,
+		playing=false,
+		isEnd=false,
 		myTurn=false,
 		maxGamer=2,
 		gamers=[];
@@ -25,14 +27,20 @@ $(function(){
 		secGame=$("#secGame"),
 		numberPlayer=$('#playernum'),
 		selectType=$("#matchType"),
-		secTimer=$('#timerDiv');
-		timer=$('#timeTxt');
+		secTimer=$('#timerDiv'),
+		timer=$('#timeTxt'),
+		againBtn=$('#playAgain'),
+		winnerName=$('#userWinnerName'),
+		endForm=$('.overlay');
 
 	startWaiting=function(){
+		waitingGame=true;
 		logSec.hide();
 		secWait.show('slow');
 	}
 	stopWaiting=function(){
+		playing=true;
+		waitingGame=false
 		secWait.hide();
 		secGame.show('slow');
 	}
@@ -42,8 +50,32 @@ $(function(){
 	}
 	stopTimer=function(){
 		secTimer.hide();
+		timer.text('0');
 	}
-	endGame=function(winner){
+	endGame=function(winner,again){
+		if (!again)
+			againBtn.hide();
+		winnerName.text(winner);
+		endForm.fadeToggle("fast");
+	}
+	supports_html5_storage=function() {
+	    try {
+	        return 'sessionStorage' in window && window.sessionStorage !== null;
+	    } catch (e) {
+	        return false;
+	    }
+	}
+	checkOldPlayer=function(){
+		if(supports_html5_storage())
+			if (sessionStorage.getItem('id')==id)
+				return {
+					id:sessionStorage.getItem('id'),
+					color:sessionStorage.getItem('color'),
+					index:sessionStorage.getItem('index')
+				};
+			else if (sessionStorage.getItem('id')==-1 && !sessionStorage.getItem('userName'))
+				return {};
+		return;
 	}
 	clickTouch=function(e){ 
         var coor = board.CANVAS.relMouseCoords(e);
@@ -61,12 +93,11 @@ $(function(){
             });
             myTurn=false;
             var winner=board.checkWinner();
-            if (winner){
+            if (winner)
             	socket.emit('gameEnd',{
             		id:id,
-            		winner:winner
-            	})
-        	}
+            		winnerColor:winner
+            	});
 		}
 	}
 	setNewGame=function(nUser,typeGame){
@@ -103,14 +134,23 @@ $(function(){
 			$('#badge'+(i+1)).attr('data-badge', 0);
 			$('#name'+(i+1)).text(players[i].username);
 		}
-
 	}
 
 	// on connection to server get the id of person's room
 	socket.on('connect', function(){
-		if (waitingGame)
+		if (waitingGame || playing || isEnd)
 			return;
-		socket.emit('load', id);
+		$(window).bind('beforeunload', function(){
+			socket.emit("leaving",{
+				id:id,
+				color:color
+			});
+		});
+		var user=checkOldPlayer();
+		if (user)
+			socket.emit('reconnected',user);
+		else
+			socket.emit('load', id);
 		$('.sec').hide();
 	});
 	//get information about the room, if it's already open or not
@@ -218,8 +258,10 @@ $(function(){
 	});
 	socket.on('end',function(data){
 		if (data.id==id)
-			endGame(data.color==color);
+			endGame(data.winner,data.again);
 	});
+
+
 
 });
 

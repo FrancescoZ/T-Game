@@ -20,6 +20,14 @@
 			color:#667073;
 			font: 16px/1.3 'Arial',sans-serif;
 		}
+    .timer{
+        font-size: 55pt;
+    font-weight: bold;
+    text-align: center;
+    font-family: Verdana;
+    position: absolute;
+    margin: 0em 0em 0em 1.5em;
+      }
 
 		.banner {
 			height: 5em;
@@ -134,6 +142,60 @@
    border-radius:50%;
    box-shadow:0 0 1px #333;
 }
+div.overlay {
+    background-color: rgba(0,0,0,.25);
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    left: 0;
+    position: fixed;
+    top: 0;
+    width: 100%;
+}
+
+div.overlay > div.end-wrapper {
+    align-self: center;
+    background-color: rgba(0,0,0,.25);
+    border-radius: 1em;
+    padding: 0.3em;
+    width:30em;
+}
+
+div.overlay > div.end-wrapper > div.end-content {
+    background-color: rgb(255,255,255);
+    border-radius: 1em;
+    padding: 24px;    
+    position: relative;
+}
+
+div.overlay > div.end-wrapper > div.end-content > h3 {
+    color: rgb(0,0,0);
+    font-family: 'Verdana', sans-serif;
+    font-size: 1.8em;
+    margin: 0 0 1.25em;
+    padding: 0;
+    text-align: center;
+}
+
+
+input[type="button"]{
+    width: 8em;
+    height: 3em;
+    text-align: center;
+    background-color: #73b4d4;
+    display: block;
+    margin: 1em 0em 2em 36%;
+    border: none;
+    border: 0.1em solid #d1d1d1;
+    border-radius: 0.3em;
+    box-shadow: 0em 0.2em 0.2em #e3e4e6;
+    color: white;
+    font-weight: bold;
+    font-size: 1em;
+    outline: none;
+    cursor: pointer;
+}
+
 	</style>
 
 </head>
@@ -157,7 +219,9 @@
 
 	<section id="secGame" class="sec" style="displa:none;">
 			<div class="main">
+				<div class="timer" id="timerDiv"><span id="timeTxt">9</span></div>
 				<div class="scoreboard" id="scoreboard">
+
 			        <ul class="userList">
 			        	<li><div id="badge2" class="not point green profileImg" data-badge="3"><span id="name1" class="name">Francesco</span></div></li>
 			        	<li><div id="badge2" class="not point red profileImg" data-badge="3"><span id="name2" class="name">Federico</span></div></li>
@@ -166,9 +230,10 @@
 			        	<li><div id="badge5" class="not point orange profileImg" data-badge="3"><span id="name5" class="name">Andy</span></div></li>
 					</ul>
 			    </div>
-			    <div style="displa:none;"> 
-			    	<div class="modal" id="timerDiv"><span id="timeTxt" class="textModal"></span></div>
+			    <div> 
+			    	
 			    </div>
+			    
 				<div class="gameBoard">
 
 					<canvas id="game" width="500" height="500">
@@ -177,7 +242,14 @@
 				</div>
 			</div>
 		</section>
-
+		<div class="overlay" style="display: none;">
+		    <div class="end-wrapper">
+		        <div class="end-content">
+		        	<h3>The winner is .....<br/><span id="userWinnerName">Francesco</span></h3>
+		        	<input type="button" id="playAgain" value="Again" />
+		        </div>
+		    </div>
+		</div>
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 	<script type="text/javascript">
 		var cnvElement=[];
@@ -243,6 +315,7 @@
 		}
 
 		(function () {
+
 		    function Board(id, c, r) {
 		        if (this instanceof Board) {
 		            this.CANVAS = document.getElementById(id);
@@ -527,6 +600,7 @@
 		        resetcon = document.getElementById("reset");
 		    b.draw();
 		    b.updateScoreBoard();
+		    $(".overlay").fadeToggle("fast");
 		    //Add event listeners for click or touch
 		    window.addEventListener("click", clickTouch, false);
 		    window.addEventListener("touchstart", clickTouch, false);

@@ -1,7 +1,8 @@
 
 var game_server = module.exports = { 
-	games : {}, 
+	games : [], 
 	game_count:0, 
+	removedPlayer:[],
     colors:['#e60000','#009900','#3385ff','#ff9900','#c61aff'],
 	isGame: function(id) {
 	    return (this.games[id]);
@@ -45,13 +46,37 @@ var game_server = module.exports = {
 	removePlayer:function(id,color){
 		if (!this.isGame(id))
 			return;
+		this.removedPlayer.push({
+			id:id,
+			user:this.games[id].players[color]
+		});
 		this.games[id].players.splice(this.games[id].players.indexOf(this.games[id].players[color]),1);
 	},
-	playerMoved:function(id){
+	playerMoved:function(id,square){
 		if (!this.isGame(id))
 			return;
-		if (++this.games[id].activePlayer>=this.games[id].players.length)
-			this.games[id].activePlayer=0;
 		this.games[id].timer=0;
+		if (square==0)
+			if (++this.games[id].activePlayer>=this.games[id].players.length)
+				this.games[id].activePlayer=0;
+		
+	},
+	removeGame:function(id){
+		if (!this.isGame(id))
+			return;
+		this.games.splice(this.games.indexOf(this.games[id]),1);
+		for (var i=0;i<this.removedPlayer.length;i++)
+			if (this.removedPlayer[i].id==id){
+				this.removedPlayer.splice(this.removedPlayer[i],1);
+				i--;
+			}
+	},
+	getPlayer:function(id,color){
+		if (!this.isGame(id))
+			return;
+		for (var player in this.games[id].players)
+			if (player.color==color)
+				return player;
 	}
+
 }
