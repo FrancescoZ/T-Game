@@ -38,7 +38,19 @@ module.exports = function(app,io){
 		});
 
 		socket.on('reconnected',function(data){
-			var gameSearched = game_server.isGame(data);
+			var gameSearched = game_server.isGame(data.id);
+			if (gameSearched && gameSearched.players.length<data.maxGamer) {
+				var player=game_server.addOld(data.id,data.index,data.color);
+				// Add the client to the room
+				socket.join(data.id);
+				socket.emit('resume',gameSearched);
+				game.in(data.id).emit('gamerReconnected', {
+						username:player.username,
+						color:player.color,
+						index:player.index,
+						id:gameSearched.id
+					});
+			}
 			
 		});
 		// When the client emits 'login', save his name and color,
@@ -46,46 +58,52 @@ module.exports = function(app,io){
 		socket.on('login', function(data) {
 			var gameSearched = game_server.findGame(data.id,data.maxGamer,data.matchType);
 			// Only five people per room are allowed
-			if (gameSearched.players.length<data.maxGamer) {
+			if (gameSearched.players.length<gameSearched.maxGamer) {
 				// Use the socket object to store data. Each client gets
 				// their own unique socket object
+				console.log('server:');
+				console.log(gameSearched);
 				
 				var player=game_server.addPlayer(data.user,gameSearched.id,data.email);
 				// Add the client to the room
-				socket.join(data.id);
+			
+				console.log('player:');
+				console.log(player);
+				socket.join(gameSearched.id);
 				socket.emit('loggedin',{
 					username:player.username,
 					color:player.color,
 					index:player.index,
 					type:gameSearched.type,
 					max:gameSearched.maxGamer,
-					mail:player.mail
+					mail:player.mail,
+					id:gameSearched.id
 				});
-				game.in(data.id).emit('peopleloggedin', {
+				game.in(gameSearched.id).emit('peopleloggedin', {
 						username:player.username,
 						color:player.color,
 						index:player.index,
 						id:gameSearched.id
 					});
-				if (gameSearched.players.length ==data.maxGamer) {
+				if (gameSearched.players.length ==gameSearched.maxGamer) {
 					// Send the startGame event to all the people in the
 					// room, along with a list of people that are in it.
-					game.in(data.id).emit('startGame', {
+					game.in(gameSearched.id).emit('startGame', {
 						boolean: true,
-						id: data.id,
+						id: gameSearched.id,
 						type:gameSearched.type,
 						users:gameSearched.players
 					});
-					game.in(data.id).emit('turn',{
+					game.in(gameSearched.id).emit('turn',{
 						color:gameSearched.players[gameSearched.activePlayer].color,
 						index:gameSearched.players[gameSearched.activePlayer].index,
 						boolean: true,
-						id: data.id
+						id: gameSearched.id
 					});
 					var interval=function(){
-						var timer = game_server.findGame(data.id,data.maxGamer,data.matchType).timer++;
-						game.in(data.id).emit("timer",{
-							id:data.id,
+						var timer = game_server.findGame(gameSearched.id,data.maxGamer,data.matchType).timer++;
+						game.in(gameSearched.id).emit("timer",{
+							id:gameSearched.id,
 							second:timer});
 						/*if (timer>40){
 							game_server.playerMoved(data.id,0);
@@ -100,8 +118,6 @@ module.exports = function(app,io){
 						}*/
 					};
 					setInterval(interval,1000);
-
-
 				}
 			}
 			else {
@@ -112,7 +128,7 @@ module.exports = function(app,io){
 		socket.on('played',function(data){
 			var gameSearched = game_server.findGame(data.id);
 			game.in(data.id).emit('moved',data);
-			game_server.playerMoved(data.id,data.squareClicked);
+			game_server.playerMoved(data.id,data.squareClicked,data.coor);
 			game.in(data.id).emit('turn',{
 				color:gameSearched.players[gameSearched.activePlayer].color,
 				boolean: true,
@@ -140,9 +156,14 @@ module.exports = function(app,io){
 			if (!game_server.isGame(data.id))
 				return;
 			var gameSearched = game_server.findGame(data.id);
-			game_server.removePlayer(data.id,data.color);
+			if (data.index-1==gameSearched.activePlayer)
+				game_server.playerMoved(data.id,data.color);
+
+			if (!game_server.removePlayer(data.id,data.color))
+				return;
+			
 			if (gameSearched.players.length>1){
-				//game.in(data.id).emit('leave',data);
+				game.in(data.id).emit('leave',data);
 				return;
 			}
 			else if (gameSearched.players.length==1)

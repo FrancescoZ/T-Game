@@ -58,53 +58,53 @@ $(function(){
 			againBtn.fadeOut(1200);
 		else
 			againBtn.on('click',function(){
-				sessionStorage.setItem('id',-1);
-				sessionStorage.removeItem('color');
-				sessionStorage.setItem('active',false);
 				location.reload();
 			});
+		localStorage.setItem('id',-1);
+		localStorage.removeItem('color');
+		localStorage.setItem('active',false);
 		winnerName.text(winner);
 		endForm.fadeToggle("fast");
 	}
 	supports_html5_storage=function() {
 	    try {
-	        return 'sessionStorage' in window && window.sessionStorage !== null;
+	        return 'localStorage' in window && window.localStorage !== null;
 	    } catch (e) {
 	        return false;
 	    }
 	}
 	checkOldPlayer=function(){
 		if(supports_html5_storage())
-			if (sessionStorage.getItem('id')==id)
+			if (localStorage.getItem('id')==id)
 				return {
-					id:sessionStorage.getItem('id'),
-					color:sessionStorage.getItem('color'),
-					index:sessionStorage.getItem('index'),
-					type:sessionStorage.getItem('type'),
-					username:sessionStorage.getItem('username'),
-					email:sessionStorage.getItem('email'),
-					maxGamer:sessionStorage.getItem('max')
+					id:localStorage.getItem('id'),
+					color:localStorage.getItem('color'),
+					index:localStorage.getItem('index'),
+					type:localStorage.getItem('type'),
+					username:localStorage.getItem('username'),
+					email:localStorage.getItem('email'),
+					maxGamer:localStorage.getItem('max')
 				};
-			else if (sessionStorage.getItem('id')==-1 && !sessionStorage.getItem('userName'))
+			else if ((localStorage.getItem('id')==-1 || localStorage.getItem('id')!=id) && localStorage.getItem('username'))
 				return {
-					type:sessionStorage.getItem('type'),
-					username:sessionStorage.getItem('username'),
-					email:sessionStorage.getItem('email'),
-					maxGamer:sessionStorage.getItem('max')
+					type:localStorage.getItem('type'),
+					username:localStorage.getItem('username'),
+					email:localStorage.getItem('email'),
+					maxGamer:localStorage.getItem('max')
 				};
 		return;
 	}
 	saveLogin=function(username,userEmail,id,type,maxGmr,index,color){
 		if (!supports_html5_storage())
 			return;
-		sessionStorage.setItem('id',id);
-		sessionStorage.setItem('username',username);
-		sessionStorage.setItem('email',userEmail);
-		sessionStorage.setItem('type',type);
-		sessionStorage.setItem('max',maxGmr);
-		sessionStorage.setItem('color',color);
-		sessionStorage.setItem('index',index);
-		sessionStorage.setItem('active',true);
+		localStorage.setItem('id',id);
+		localStorage.setItem('username',username);
+		localStorage.setItem('email',userEmail);
+		localStorage.setItem('type',type);
+		localStorage.setItem('max',maxGmr);
+		localStorage.setItem('color',color);
+		localStorage.setItem('index',index);
+		localStorage.setItem('active',true);
 	}
 	clickTouch=function(e){ 
         var coor = board.CANVAS.relMouseCoords(e);
@@ -138,17 +138,17 @@ $(function(){
 	}
 	checkOtherSessionActive=function(){
 		if (supports_html5_storage())
-			return (sessionStorage.getItem('active') && sessionStorage.getItem('id')==id);
+			return (localStorage.getItem('active')!='false' && localStorage.getItem('id')==id);
 		return false;
 	}
-	setNewGame=function(nUser,typeGame,username,mail){
+	setNewGame=function(change,nUser,typeGame,username,mail){
 		if (nUser){
-			if (!username)
+			if (!change)
 				numberPlayer.attr('disabled', 'disabled');
 			numberPlayer.val(nUser);
 		}
 		if (typeGame){
-			if (!username)
+			if (!change)
 				selectType.attr('disabled', 'disabled');
 			selectType.val(typeGame);
 		}
@@ -192,11 +192,13 @@ $(function(){
 		if (waitingGame || playing || isEnd)
 			return;
 		window.addEventListener("beforeunload", function (e) {
-  			socket.emit("leaving",{
-				id:id,
-				color:color
-			});
-			sessionStorage.setItem('active',false);
+  			if (playing)
+  				socket.emit("leaving",{
+					id:id,
+					color:color,
+					index:index
+				});
+			localStorage.setItem('active',false);
 		});
 		if (checkOtherSessionActive())
 			return notAllowDouble();
@@ -213,17 +215,23 @@ $(function(){
 		if (waitingGame)
 			return;
 		var usr=checkOldPlayer();
-		if (data.number===0 && usr && !usr.username)
-			setNewGame();
-		else if (usr && usr.username)
-			setNewGame(usr.maxGamer,usr.type,usr.username,usr.email);
-		else{
-			setNewGame(data.nusers,data.type);
+		if (data.number>0){
+			if (usr && usr.username)
+				setNewGame(false,data.nusers,data.type,usr.username,usr.email);
+			else
+				setNewGame(false,data.nusers,data.type);
 			for (var i=0;i<data.number;i++)
 				$(".bokeh").append('<li></li>');
 			$("#numPlayerInfo").text(i);
-			$("#linkGame").attr("http://localhost:8080/home/"+id);
+			$("#linkGame").text(window.location.hostname+"/home/"+id);
+			
 		}
+		else
+			if (usr && usr.username)
+				setNewGame(true,usr.maxGamer,usr.type,usr.username,usr.email);
+			else
+				setNewGame(true);
+
 		loginForm.on('submit', function(e){
 				e.preventDefault();
 				e.preventDefault();
@@ -244,6 +252,7 @@ $(function(){
 		index=data.index;
 		saveLogin(data.username,data.mail,id,data.type,data.max,index,color);
 		waitingGame=true;
+		id=data.id
 		startWaiting();
 	});
 	socket.on('peopleingame', function(data){
@@ -279,7 +288,7 @@ $(function(){
 		gamers.push({name:data.username,color:data.color});
 		if (gamers.length<=maxGamer){
 			$(".bokeh").append('<li></li>');
-			$("#numPlayerInfo").text(gamers.length);
+			$("#numPlayerInfo").text(gamers.length+1);
 			$("#linkGame").attr("http://localhost:8080/home/"+id);
 		}
 		if (waitingGame && gamers.length==maxGamer)
@@ -317,8 +326,30 @@ $(function(){
 		if (data.id==id)
 			endGame(data.winner,data.again);
 	});
+	socket.on('leave',function(data){
+		$('#badge'+(data.index+1)).fadeOut();
 
+	});
 
+	socket.on('resume',function(data){
+		//badge
+		//newgame
+		stopWaiting();
+		board = new Board("game", data.type, data.type,color);
+		board.draw();
+	   	initScoreBoard(data.players);
+	    //Add event listeners for click or touch
+	    window.addEventListener("click", clickTouch, false);
+	    window.addEventListener("touchstart", clickTouch, false);
+		for (var i=0;i<data.clickedObject.length;i++){
+			board.move(data.clickedObject[i].coor,data.clickedObject[i].color);
+			updateScoreBoard(data.clickedObject[i].color,data.clickedObject[i].index);
+		}
+	});
+
+	socket.on('gamerReconnected',function(data){
+		$('#badge'+(data.index+1)).fadeIn();
+	});
 
 });
 
@@ -335,75 +366,5 @@ function isValid(thatemail) {
 function showMessage(status,data){
 
 	return ;
-	if(status === "connected"){
-
-		section.children().css('display', 'none');
-		onConnect.fadeIn(1200);
-	}
-
-	else if(status === "inviteSomebody"){
-
-		// Set the invite link content
-		$("#link").text(window.location.href);
-
-		onConnect.fadeOut(1200, function(){
-			inviteSomebody.fadeIn(1200);
-		});
-	}
-
-	else if(status === "personinchat"){
-
-		onConnect.css("display", "none");
-		personInside.fadeIn(1200);
-
-		chatNickname.text(data.user);
-		ownerImage.attr("src",data.avatar);
-	}
-
-	else if(status === "youStartedChatWithNoMessages") {
-
-		left.fadeOut(1200, function() {
-			inviteSomebody.fadeOut(1200,function(){
-				noMessages.fadeIn(1200);
-				footer.fadeIn(1200);
-			});
-		});
-
-		friend = data.users[1];
-		noMessagesImage.attr("src",data.avatars[1]);
-	}
-
-	else if(status === "heStartedChatWithNoMessages") {
-
-		personInside.fadeOut(1200,function(){
-			noMessages.fadeIn(1200);
-			footer.fadeIn(1200);
-		});
-
-		friend = data.users[0];
-		noMessagesImage.attr("src",data.avatars[0]);
-	}
-
-	else if(status === "chatStarted"){
-
-		section.children().css('display','none');
-		chatScreen.css('display','block');
-	}
-
-	else if(status === "somebodyLeft"){
-
-		leftImage.attr("src",data.avatar);
-		leftNickname.text(data.user);
-
-		section.children().css('display','none');
-		footer.css('display', 'none');
-		left.fadeIn(1200);
-	}
-
-	else if(status === "tooManyPeople") {
-
-		section.children().css('display', 'none');
-		tooManyPeople.fadeIn(1200);
-	}
 }
 
