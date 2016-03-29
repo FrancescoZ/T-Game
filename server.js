@@ -10,6 +10,13 @@ module.exports = function(app,io){
 
 	var game_server=require("./game_server.js");
 
+	app.get('/home',function(req,res){
+		// Render views/home.html
+		// Generate unique id for the room
+		var id = Math.round((Math.random() * 1000000));
+		// Redirect to the random room	
+	    res.redirect('/home/'+id);
+	});
 	app.get('/', function(req, res){
 		// Render views/home.html
 		// Generate unique id for the room
@@ -39,6 +46,8 @@ module.exports = function(app,io){
 
 		socket.on('reconnected',function(data){
 			var gameSearched = game_server.isGame(data.id);
+			if (!gameSearched)
+				return socket.emit('noMoreGame',{});
 			if (gameSearched && gameSearched.players.length<data.maxGamer) {
 				var player=game_server.addOld(data.id,data.index,data.color);
 				// Add the client to the room

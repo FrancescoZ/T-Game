@@ -84,8 +84,7 @@ var game_server = module.exports = {
 	playerMoved:function(id,square,coor){
 		if (!this.isGame(id))
 			return;
-		console.log('Click by:');
-		console.log(this.games[id].players[this.games[id].activePlayer].color);
+		
 		this.games[id].timer=0;
 		if (coor)
 			this.games[id].clickedObject.push({
@@ -96,7 +95,7 @@ var game_server = module.exports = {
 		if (square==0)
 			if (++this.games[id].activePlayer>=this.games[id].players.length)
 				this.games[id].activePlayer=0;
-		
+		console.log('Click by:');
 	},
 	removeGame:function(id){
 		if (!this.isGame(id))

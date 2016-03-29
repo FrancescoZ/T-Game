@@ -17,6 +17,7 @@ $(function(){
 		isEnd=false,
 		myTurn=false,
 		maxGamer=2,
+		active=false,
 		gamers=[];
 
 	var yourName = $("#userName"),
@@ -46,25 +47,25 @@ $(function(){
 		secGame.fadeIn(1200);
 	}
 	showTimer=function(count){
-		secTimer.fadeIn(1200);
 		timer.text(count);
+		secTimer.attr('class', 'timer');
+		secTimer.fadeIn(1200);
+		
 	}
 	stopTimer=function(){
 		secTimer.fadeOut(1200);
 		timer.text('0');
 	}
-	endGame=function(winner,again){
-		if (!again)
-			againBtn.fadeOut(1200);
-		else
-			againBtn.on('click',function(){
-				location.reload();
-			});
+	endGame=function(winner,again,notShow){
+		againBtn.on('click',function(){
+			location.replace('');
+		});
 		localStorage.setItem('id',-1);
 		localStorage.removeItem('color');
 		localStorage.setItem('active',false);
-		winnerName.text(winner);
-		endForm.fadeToggle("fast");
+		winnerName.html(winner);
+		if (!notShow)
+			endForm.fadeToggle("fast");
 	}
 	supports_html5_storage=function() {
 	    try {
@@ -134,7 +135,7 @@ $(function(){
 		secGame.fadeOut();
 		secWait.fadeOut();
 		notAllow.fadeIn();
-
+		active=true;
 	}
 	checkOtherSessionActive=function(){
 		if (supports_html5_storage())
@@ -154,11 +155,11 @@ $(function(){
 		}
 		if (username){
 			yourName.val(username);
-			yourName.attr('disabled', 'disabled');
+			//yourName.attr('disabled', 'disabled');
 		}
 		if (mail){
 			yourEmail.val(mail);
-			yourEmail.attr('disabled', 'disabled');
+			//yourEmail.attr('disabled', 'disabled');
 		}
 		logSec.fadeIn(1200);
 	}
@@ -198,7 +199,8 @@ $(function(){
 					color:color,
 					index:index
 				});
-			localStorage.setItem('active',false);
+  			if (!active)
+				localStorage.setItem('active',false);
 		});
 		if (checkOtherSessionActive())
 			return notAllowDouble();
@@ -223,7 +225,7 @@ $(function(){
 			for (var i=0;i<data.number;i++)
 				$(".bokeh").append('<li></li>');
 			$("#numPlayerInfo").text(i);
-			$("#linkGame").text(window.location.hostname+"/home/"+id);
+			$("#linkGame").html(window.location.hostname+"/home/"+id);
 			
 		}
 		else
@@ -255,41 +257,12 @@ $(function(){
 		id=data.id
 		startWaiting();
 	});
-	socket.on('peopleingame', function(data){
-		/*console.log("Received signal peopleingame");
-		console.log(data);
-		if(data.number > 0 && data.number<maxGamer){
-			showMessage("login");
-			loginForm.on('submit', function(e){
-				e.preventDefault();
-				name = $.trim(yourName.val());
-				email = yourEmail.val();
-				gameType=selectType.val();
-				login(name,email,id,gameType,socket);
-			});
-
-		}
-		else if(data.number===maxGamer) {
-			showMessage("login");
-			loginForm.on('submit', function(e){
-				e.preventDefault();
-				name = $.trim(yourName.val());
-				email = yourEmail.val();
-				gameType=selectType.val();
-				login(name,email,id,gameType,socket);
-				showMessage("AttentFinished");
-			});
-		}
-		else {
-			showMessage("tooManyPeople");
-		}*/
-	});
 	socket.on('peopleloggedin',function(data){
 		gamers.push({name:data.username,color:data.color});
 		if (gamers.length<=maxGamer){
 			$(".bokeh").append('<li></li>');
-			$("#numPlayerInfo").text(gamers.length+1);
-			$("#linkGame").attr("http://localhost:8080/home/"+id);
+			$("#numPlayerInfo").text(gamers.length);
+			$("#linkGame").html(window.location.hostname+"/home/"+id);
 		}
 		if (waitingGame && gamers.length==maxGamer)
 			showMessage("StartingGame",secWait);
@@ -318,6 +291,9 @@ $(function(){
 		if(data.boolean && data.id == id && data.color==color) {
 			myTurn=true;
 			stopTimer();
+			secTimer.fadeIn(1200);
+			timer.text('Your turn');
+			secTimer.attr('class', 'notimer');
 		}
 		else
 			showTimer();
@@ -328,7 +304,6 @@ $(function(){
 	});
 	socket.on('leave',function(data){
 		$('#badge'+(data.index+1)).fadeOut();
-
 	});
 
 	socket.on('resume',function(data){
@@ -350,8 +325,13 @@ $(function(){
 	socket.on('gamerReconnected',function(data){
 		$('#badge'+(data.index+1)).fadeIn();
 	});
+	socket.on('noMoreGame',function(data){
+		endGame('','',true);
+		location.replace('');
+	});
 
 });
+
 
 
 function scrollToBottom(){

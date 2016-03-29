@@ -71,7 +71,7 @@
 		            this.COLS = c || 4;
 		            this.ROWS = r || 4;
 		            this.ACTIVECOLOR=clr || "#6699ff";
-		            this.COLOR="#e6e6e6";
+		            this.COLOR="#cfd6d8";
 		            this.BORDERCOLOR="#FFFFFF";
 		            this.TILEMARGINTOP=12;
 		            this.TILEMARGINSIDE=0;
