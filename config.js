@@ -6,16 +6,16 @@ var path = require ('path');
 
 module.exports = function(app, io){
 
-	// Set .html as the default template extension
+	// l'extension de default
 	app.set('view engine', 'html');
 
-	// Initialize the ejs template engine
+	// pour distribuir de fiche different au html css et js
 	app.engine('html', require('ejs').renderFile);
 
-	// Tell express where it can find the templates
+	// Dit à express ou trouver les pages
 	app.set('views', __dirname + '/views');
 
-	// Make the files in the public folder available to the world
+	//Touts qui est dans le dossier public est avaiable par tout le monde
 	app.use(express.static(path.join(__dirname + '/public')));
 
 

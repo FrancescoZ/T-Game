@@ -1,25 +1,17 @@
-// This is the main file of our chat app. It initializes a new 
-// express.js instance, requires the config and routes files
-// and listens on a port. Start the application by running
-// 'node app.js' in your terminal
-
-
+//pour pouvoir lancer l'application il faut appeler ce ficher
+//on utilise le module express et socketIO (voir le rapport pour connaitre les raisons)
 var express = require('express'),
 	app = express();
 
-// This is needed if the app is run on heroku:
-
+//pour pouvoir lancer l'app sur un serveur inligne
 var port = process.env.app_port || 8080;
 
-// Initialize a new socket.io object. It is bound to 
-// the express app, which allows them to coexist.
-
+//initialisation du module socketIO
 var io = require('socket.io').listen(app.listen(port));
 
-// Require the configuration and the routes files, and pass
-// the app and io as arguments to the returned functions.
-
+// Le configuration et les autre gestion du server
 require('./config')(app, io);
+//l'engine qui gere la connetion au socket
 require('./server')(app, io);
 
-console.log('Your application is running on http://localhost:' + port);
+console.log('Your application is running');
