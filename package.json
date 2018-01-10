@@ -1,0 +1,19 @@
+{
+  "name": "thiago-game",
+  "version": "1.0.5",
+  "description": "A funny new game",
+  "main": "app.js",
+  "scripts": {
+    "build": "gulp build",
+    "start": "gulp run",
+    "watch": "gulp watch",
+    "test": "gulp test"
+  },
+  "author": "Francesco Zanoli & Florentin Vallee",
+  "license": "MIT",
+  "dependencies": {
+    "ejs": "^1.0.0",
+    "express": "^4.8.2",
+    "socket.io": "1.0.6"
+  }
+}
