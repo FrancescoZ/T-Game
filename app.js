@@ -4,7 +4,7 @@ var express = require('express'),
 	app = express();
 
 //pour pouvoir lancer l'app sur un serveur inligne
-var port =  8080;
+var port = process.env.PORT || 8080;
 
 //initialisation du module socketIO
 var io = require('socket.io').listen(app.listen(port));
